@@ -1,36 +1,44 @@
+// thanks for the insight from https://rosettacode.org/wiki/S-Expressions#Go
+
 package condition
 
-import (
-	"fmt"
-	"testing"
-)
-
-type res struct {
-	data    string
-	advance int
-	token   string
-	err     error
-}
+import "testing"
 
 func TestFscan(t *testing.T) {
-	s := []byte(`
-and
-	(or
-		(= gender male)
-		(> (age birthdate) 18)
-	)
-	(in version "2.1.6" "2.1.7" "2.1.8")
-	`)
-	fmt.Println(string(s))
-	for i := 0; i < len(s); {
-		advance, token, _ := scan(s[i:])
-		fmt.Println(string(token))
-		i += advance
+	type input struct {
+		exp string
+		err error
+	}
+	inputs := []input{
+		{`a`, nil},
+		{`(a)`, nil},
+		{`(a b c)`, nil},
+		{`(a b ( c d ) )`, nil},
+		{`(a '(' ')' b ( c ) (d e (f g)))`, nil},
+		{`((data "quoted data" 123 4.5) (data (!@# (4.5) "(more" "data)")))`, nil},
+		{`((data "quoted data" ")" 123 4.5) (data (!@# (4.5) "(more" "data)")))`, nil},
+		{``, ErrNilInput},
+		{`("a" 'b)`, ErrUnexpectedEnd},
+		{`(a b) c`, ErrLeftOverText},
+		{`(a b) ( c d )`, ErrLeftOverText},
+		{`'(' "(" "\"(\"" a b c)`, ErrUnmatchedParenthesis},
+	}
+	for _, input := range inputs {
+		_, err := parse(input.exp)
+		if err != input.err {
+			t.Errorf("wanna: %v, got: %v", input.err, err)
+		}
 	}
 }
 
 func TestFscanStringWithQuotesStriped(t *testing.T) {
-	data := []res{
+	type input struct {
+		data    string
+		advance int
+		token   string
+		err     error
+	}
+	data := []input{
 		{``, 0, ``, nil},
 		{`strings`, 7, `tring`, nil},
 		{`st'rings`, 8, `t'ring`, nil},
