@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/nullne/condition/function"
 )
 
 var (
@@ -17,16 +19,55 @@ var (
 	ErrUnmatchedParenthesis = errors.New("unmatched parenthesis")
 )
 
-type qstring string
+// string without quoted is variable name
+type varString string
 
-func (q qstring) String() string {
-	return strconv.Quote(string(q))
+func (q varString) String() string {
+	return string(q)
 }
 
 // dynamic types for i are string, qString, int, float64, list
 type sexp struct {
 	// type of i must NOT be sexp
 	i interface{}
+}
+
+func (exp sexp) evaluate(vvf VarValue) (interface{}, error) {
+	if l, isList := exp.i.(list); isList {
+		if len(l) == 0 {
+			return l, nil
+		}
+		isFunc := false
+		if name, ok := l[0].i.(varString); ok {
+			if _, err := function.Get(string(name)); err == nil {
+				isFunc = true
+			}
+		}
+
+		params := make([]interface{}, 0, len(l))
+		tl := l
+		if isFunc {
+			tl = l[1:]
+		}
+		for _, p := range tl {
+			v, err := p.evaluate(vvf)
+			if err != nil {
+				return nil, err
+			}
+			params = append(params, v)
+		}
+		if isFunc {
+			fn, _ := function.Get(string(l[0].i.(varString)))
+			return fn.Eval(params...)
+		} else {
+			return append(make([]interface{}, 0, len(params)), params...), nil
+		}
+	} else {
+		if val, ok := exp.i.(varString); ok {
+			return vvf(string(val))
+		}
+		return exp.i, nil
+	}
 }
 
 func parse(exp string) (sexp, error) {
@@ -121,7 +162,7 @@ func scan(data []byte) (advance int, token interface{}, err error) {
 
 	if b := data[start]; b == '\'' || b == '"' || b == '`' {
 		advance, token, err = scanStringWithQuotesStriped(data[start:])
-		return start + advance, qstring(token.([]byte)), err
+		return start + advance, string(token.([]byte)), err
 	}
 
 	for width, i := 0, start; i < length; i += width {
@@ -148,7 +189,7 @@ func convert(data []byte) interface{} {
 	if v, err := strconv.ParseFloat(string(data), 64); err == nil {
 		return v
 	}
-	return string(data)
+	return varString(data)
 }
 
 // scanStringWithQuotesStriped scan string surrounded with ', " or something like this, a single character

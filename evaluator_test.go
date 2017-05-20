@@ -1,23 +1,54 @@
 package condition
 
-import (
-	"fmt"
-	"testing"
-)
+import "testing"
 
 func TestBasic(t *testing.T) {
 	// stmt := `(in gender ("female" "male"))`
-	stmt := `(in 123 (123 456))`
-	exp, err := parse(stmt)
-	if err != nil {
-		t.Error(err)
+	type input struct {
+		expr string
+		res  interface{}
+		err  error
 	}
 	vvf := func(name string) (interface{}, error) {
-		return "male", nil
+		switch name {
+		case "gender":
+			return "male", nil
+		case "age":
+			return 18, nil
+		case "price":
+			return 16.7, nil
+		}
+		return nil, ErrNotFound
 	}
-	res, err := evaluate(exp, vvf)
-	if err != nil {
-		t.Error(err)
+	inputs := []input{
+		{
+			`(in gender ("female" "male"))`,
+			true,
+			nil,
+		},
+		{
+			`(in age (16 17))`,
+			false,
+			nil,
+		},
+		{
+			`(and (in age (16 17)) (in gender ("female" "male")) )`,
+			false,
+			nil,
+		},
+		{
+			`(in price (16.7 17))`,
+			true,
+			nil,
+		},
 	}
-	fmt.Println(res)
+	for _, input := range inputs {
+		r, err := BoolEval(input.expr, vvf)
+		if err != input.err {
+			t.Error(err)
+		}
+		if r != input.res {
+			t.Errorf("expression `` %s wanna: %+v, got: %+v", input.expr, input.res, r)
+		}
+	}
 }
