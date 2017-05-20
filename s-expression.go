@@ -25,6 +25,7 @@ func (q qstring) String() string {
 
 // dynamic types for i are string, qString, int, float64, list
 type sexp struct {
+	// type of i must NOT be sexp
 	i interface{}
 }
 
@@ -45,7 +46,11 @@ ss:
 				if v, ok := e.Value.(byte); ok && v == '(' {
 					exps := make(list, 0, ins.Len())
 					for e := ins.Back(); e != nil; e = e.Prev() {
-						exps = append(exps, sexp{e.Value})
+						if p, ok := e.Value.(sexp); ok {
+							exps = append(exps, p)
+						} else {
+							exps = append(exps, sexp{e.Value})
+						}
 					}
 					tokens.PushBack(sexp{exps})
 					continue ss
