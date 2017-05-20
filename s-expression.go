@@ -56,10 +56,17 @@ ss:
 		}
 		tokens.PushBack(token)
 	}
+
 	if tokens.Len() == 0 {
 		return sexp{}, ErrNilInput
 	} else if tokens.Len() != 1 {
 		return sexp{}, ErrLeftOverText
+	}
+	if exp, ok := tokens.Back().Value.(sexp); ok {
+		if l, ok := exp.i.(list); ok && len(l) == 0 {
+			return sexp{}, ErrNilInput
+		}
+		return exp, nil
 	}
 	return sexp{tokens.Back().Value}, nil
 }
