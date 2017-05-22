@@ -43,7 +43,20 @@ func TestBasic(t *testing.T) {
 		},
 	}
 	for _, input := range inputs {
-		r, err := BoolEval(input.expr, vvf)
+		r, err := EvalBoolWithParamsFunc(input.expr, vvf)
+		if err != input.err {
+			t.Error(err)
+		}
+		if r != input.res {
+			t.Errorf("expression `` %s wanna: %+v, got: %+v", input.expr, input.res, r)
+		}
+	}
+	for _, input := range inputs {
+		e, err := New(input.expr)
+		if err != nil {
+			t.Error(err)
+		}
+		r, err := e.EvalBoolWithParamsFunc(vvf)
 		if err != input.err {
 			t.Error(err)
 		}

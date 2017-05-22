@@ -6,18 +6,41 @@ import "errors"
 
 var (
 	ErrNotFound      = errors.New("neither function not variable found")
-	ErrInvalidResult = errors.New("invalid result")
+	ErrInvalidResult = errors.New("invalid result type")
 )
 
-// VarValue returns the runtime value for variable in expression
-type VarValue func(name string) (interface{}, error)
-
-func Eval(expr string, fn VarValue) (interface{}, error) {
-	return eval(expr, fn)
+type Expression struct {
+	exp sexp
 }
 
-func BoolEval(expr string, fn VarValue) (bool, error) {
-	r, err := eval(expr, fn)
+func New(expr string) (Expression, error) {
+	exp, err := parse(expr)
+	if err != nil {
+		return Expression{}, err
+	}
+	return Expression{
+		exp: exp,
+	}, nil
+}
+
+func (e Expression) Eval(params map[string]interface{}) (interface{}, error) {
+	return e.exp.evaluate(toParamsFunc(params))
+}
+
+func (e Expression) EvalWithParamsFunc(pf ParamsFunc) (interface{}, error) {
+	return e.exp.evaluate(pf)
+}
+
+func (e Expression) EvalBool(params map[string]interface{}) (bool, error) {
+	return e.evalBool(toParamsFunc(params))
+}
+
+func (e Expression) EvalBoolWithParamsFunc(pf ParamsFunc) (bool, error) {
+	return e.evalBool(pf)
+}
+
+func (e Expression) evalBool(pf ParamsFunc) (bool, error) {
+	r, err := e.exp.evaluate(pf)
 	if err != nil {
 		return false, err
 	}
@@ -28,10 +51,47 @@ func BoolEval(expr string, fn VarValue) (bool, error) {
 	return b, nil
 }
 
-func eval(expr string, fn VarValue) (interface{}, error) {
-	exp, err := parse(expr)
+// ParamsFunc returns the runtime value for variable in expression
+type ParamsFunc func(name string) (interface{}, error)
+
+func toParamsFunc(params map[string]interface{}) ParamsFunc {
+	return func(name string) (interface{}, error) {
+		v, ok := params[name]
+		if !ok {
+			return nil, ErrNotFound
+		}
+		return v, nil
+	}
+}
+
+func Eval(expr string, params map[string]interface{}) (interface{}, error) {
+	e, err := New(expr)
+	if err != nil {
+		return nil, err
+	}
+	return e.Eval(params)
+}
+
+func EvalBool(expr string, params map[string]interface{}) (bool, error) {
+	e, err := New(expr)
 	if err != nil {
 		return false, err
 	}
-	return exp.evaluate(fn)
+	return e.EvalBool(params)
+}
+
+func EvalWithParamsFunc(expr string, pf ParamsFunc) (interface{}, error) {
+	e, err := New(expr)
+	if err != nil {
+		return nil, err
+	}
+	return e.EvalWithParamsFunc(pf)
+}
+
+func EvalBoolWithParamsFunc(expr string, pf ParamsFunc) (bool, error) {
+	e, err := New(expr)
+	if err != nil {
+		return false, err
+	}
+	return e.EvalBoolWithParamsFunc(pf)
 }
