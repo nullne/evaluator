@@ -9,7 +9,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/nullne/condition/function"
+	"github.com/nullne/evaluator/function"
 )
 
 var (
