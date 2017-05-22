@@ -1,6 +1,6 @@
 // thanks for the insight from https://rosettacode.org/wiki/S-Expressions#Go
 
-package condition
+package evaluator
 
 import "testing"
 

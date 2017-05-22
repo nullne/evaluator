@@ -1,4 +1,4 @@
-package condition
+package evaluator
 
 import (
 	queue "container/list"

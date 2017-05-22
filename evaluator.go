@@ -1,6 +1,6 @@
 // s-expression
 // - treat the empty list, or first element of list is not function (type is string), as data list
-package condition
+package evaluator
 
 import "errors"
 
