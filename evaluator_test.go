@@ -9,16 +9,10 @@ func TestBasic(t *testing.T) {
 		res  interface{}
 		err  error
 	}
-	vvf := func(name string) (interface{}, error) {
-		switch name {
-		case "gender":
-			return "male", nil
-		case "age":
-			return 18, nil
-		case "price":
-			return 16.7, nil
-		}
-		return nil, ErrNotFound
+	vvf := MapParams{
+		"gender": "male",
+		"age":    18,
+		"price":  16.7,
 	}
 	inputs := []input{
 		{
@@ -43,7 +37,7 @@ func TestBasic(t *testing.T) {
 		},
 	}
 	for _, input := range inputs {
-		r, err := EvalBoolWithParamsFunc(input.expr, vvf)
+		r, err := EvalBool(input.expr, vvf)
 		if err != input.err {
 			t.Error(err)
 		}
@@ -56,7 +50,7 @@ func TestBasic(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		r, err := e.EvalBoolWithParamsFunc(vvf)
+		r, err := e.EvalBool(vvf)
 		if err != input.err {
 			t.Error(err)
 		}

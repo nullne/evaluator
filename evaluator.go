@@ -23,24 +23,12 @@ func New(expr string) (Expression, error) {
 	}, nil
 }
 
-func (e Expression) Eval(params map[string]interface{}) (interface{}, error) {
-	return e.exp.evaluate(toParamsFunc(params))
+func (e Expression) Eval(params Params) (interface{}, error) {
+	return e.exp.evaluate(params)
 }
 
-func (e Expression) EvalWithParamsFunc(pf ParamsFunc) (interface{}, error) {
-	return e.exp.evaluate(pf)
-}
-
-func (e Expression) EvalBool(params map[string]interface{}) (bool, error) {
-	return e.evalBool(toParamsFunc(params))
-}
-
-func (e Expression) EvalBoolWithParamsFunc(pf ParamsFunc) (bool, error) {
-	return e.evalBool(pf)
-}
-
-func (e Expression) evalBool(pf ParamsFunc) (bool, error) {
-	r, err := e.exp.evaluate(pf)
+func (e Expression) EvalBool(params Params) (bool, error) {
+	r, err := e.exp.evaluate(params)
 	if err != nil {
 		return false, err
 	}
@@ -52,19 +40,21 @@ func (e Expression) evalBool(pf ParamsFunc) (bool, error) {
 }
 
 // ParamsFunc returns the runtime value for variable in expression
-type ParamsFunc func(name string) (interface{}, error)
+type MapParams map[string]interface{}
 
-func toParamsFunc(params map[string]interface{}) ParamsFunc {
-	return func(name string) (interface{}, error) {
-		v, ok := params[name]
-		if !ok {
-			return nil, ErrNotFound
-		}
-		return v, nil
+func (p MapParams) Get(name string) (interface{}, error) {
+	v, ok := p[name]
+	if !ok {
+		return nil, ErrNotFound
 	}
+	return v, nil
 }
 
-func Eval(expr string, params map[string]interface{}) (interface{}, error) {
+type Params interface {
+	Get(name string) (interface{}, error)
+}
+
+func Eval(expr string, params Params) (interface{}, error) {
 	e, err := New(expr)
 	if err != nil {
 		return nil, err
@@ -72,26 +62,10 @@ func Eval(expr string, params map[string]interface{}) (interface{}, error) {
 	return e.Eval(params)
 }
 
-func EvalBool(expr string, params map[string]interface{}) (bool, error) {
+func EvalBool(expr string, params Params) (bool, error) {
 	e, err := New(expr)
 	if err != nil {
 		return false, err
 	}
 	return e.EvalBool(params)
-}
-
-func EvalWithParamsFunc(expr string, pf ParamsFunc) (interface{}, error) {
-	e, err := New(expr)
-	if err != nil {
-		return nil, err
-	}
-	return e.EvalWithParamsFunc(pf)
-}
-
-func EvalBoolWithParamsFunc(expr string, pf ParamsFunc) (bool, error) {
-	e, err := New(expr)
-	if err != nil {
-		return false, err
-	}
-	return e.EvalBoolWithParamsFunc(pf)
 }

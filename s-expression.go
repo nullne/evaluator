@@ -32,7 +32,7 @@ type sexp struct {
 	i interface{}
 }
 
-func (exp sexp) evaluate(pf ParamsFunc) (interface{}, error) {
+func (exp sexp) evaluate(ps Params) (interface{}, error) {
 	if l, isList := exp.i.(list); isList {
 		if len(l) == 0 {
 			return l, nil
@@ -50,7 +50,7 @@ func (exp sexp) evaluate(pf ParamsFunc) (interface{}, error) {
 			tl = l[1:]
 		}
 		for _, p := range tl {
-			v, err := p.evaluate(pf)
+			v, err := p.evaluate(ps)
 			if err != nil {
 				return nil, err
 			}
@@ -64,7 +64,7 @@ func (exp sexp) evaluate(pf ParamsFunc) (interface{}, error) {
 		}
 	} else {
 		if val, ok := exp.i.(varString); ok {
-			return pf(string(val))
+			return ps.Get(string(val))
 		}
 		return exp.i, nil
 	}
