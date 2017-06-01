@@ -22,7 +22,6 @@ func Get(name string) (Function, error) {
 
 type Function interface {
 	Eval(params ...interface{}) (interface{}, error)
-	Helper() string
 }
 
 func Regist(name string, fn Function) error {
