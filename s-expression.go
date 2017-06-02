@@ -64,7 +64,11 @@ func (exp sexp) evaluate(ps Params) (interface{}, error) {
 		}
 	} else {
 		if val, ok := exp.i.(varString); ok {
-			return ps.Get(string(val))
+			s := string(val)
+			if _, err := function.Get(s); err == nil {
+				return s, nil
+			}
+			return ps.Get(s)
 		}
 		return exp.i, nil
 	}

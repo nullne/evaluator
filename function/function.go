@@ -6,6 +6,7 @@ var (
 	ErrNotFound       = errors.New("function not implemented")
 	ErrParamsInvalid  = errors.New("params are invalid")
 	ErrFunctionExists = errors.New("function exists")
+	ErrIllegalFormat  = errors.New("illegal data format")
 )
 
 var (

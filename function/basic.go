@@ -76,6 +76,13 @@ func init() {
 	MustRegist(FuncTypeTime, TypeTime{})
 	MustRegist(FuncTypeDefaultTime, TypeDefaultTime{})
 	MustRegist(FuncTypeDefaultDate, TypeDefaultDate{})
+
+	MustRegist(FuncModulo, Modulo{})
+	MustRegist(OperatorModulo, Modulo{})
+	MustRegist(OperatorAdd, Add{})
+	MustRegist(OperatorSubtract, Subtract{})
+	MustRegist(OperatorMultiply, Multiply{})
+	MustRegist(OperatorDivide, Divide{})
 }
 
 type In struct{}
@@ -104,7 +111,7 @@ type Between struct{}
 // Between{}.Eval(33, 10, 100)
 func (f Between) Eval(params ...interface{}) (interface{}, error) {
 	if l := len(params); l != 3 {
-		return false, fmt.Errorf("need three params, but got", l)
+		return false, fmt.Errorf("need three params, but got %d", l)
 	}
 	ge, err := GreaterThanOrEqualTo{}.Eval(params[0], params[1])
 	if err != nil {
@@ -135,7 +142,7 @@ type Or struct{}
 
 // Eval returns the result of logic OR for params which must be type of boolean
 func (f Or) Eval(params ...interface{}) (interface{}, error) {
-	return logicAndOr("or", params)
+	return logicAndOr("or", params...)
 }
 
 func logicAndOr(t string, params ...interface{}) (bool, error) {
@@ -258,7 +265,7 @@ func (f *compare) eval(op string, params ...interface{}) (interface{}, error) {
 
 	switch left := params[0].(type) {
 	case int:
-		return f.evalInt(op, left, params[1].(int)), nil
+		return f.evalFloat64(op, float64(left), float64(params[1].(int))), nil
 	case float64:
 		return f.evalFloat64(op, left, params[1].(float64)), nil
 	case string:
@@ -269,20 +276,6 @@ func (f *compare) eval(op string, params ...interface{}) (interface{}, error) {
 	default:
 		return false, ErrNotFound
 	}
-}
-
-func (f *compare) evalInt(op string, left, right int) bool {
-	switch op {
-	case ">":
-		return left > right
-	case "<":
-		return left < right
-	case ">=":
-		return left >= right
-	case "<=":
-		return left <= right
-	}
-	return false
 }
 
 func (f *compare) evalFloat64(op string, left, right float64) bool {
@@ -348,17 +341,21 @@ func (f TypeDefaultDate) Eval(params ...interface{}) (interface{}, error) {
 type typeTime struct{}
 
 func (f typeTime) eval(params ...interface{}) (interface{}, error) {
-	if l := len(params); !(l != 2) {
-		return false, fmt.Errorf("need two param, but got %d", l)
+	if l := len(params); l != 2 {
+		return nil, fmt.Errorf("need two param, but got %d", l)
 	}
 	if list, ok := params[1].([]interface{}); ok {
-		res := make([]interface{}, 0, len(list))
+		res := make([]time.Time, 0, len(list))
 		for _, p := range list {
-			v, err := f.eval(p)
+			v, err := f.eval(params[0], p)
 			if err != nil {
 				return nil, err
 			}
-			res = append(res, v)
+			if t, ok := v.(time.Time); ok {
+				res = append(res, t)
+			} else {
+				return nil, ErrIllegalFormat
+			}
 		}
 		return res, nil
 	} else {
@@ -385,17 +382,21 @@ func (f typeTime) convert(ll, vv interface{}) (time.Time, error) {
 type TypeVersion struct{}
 
 func (f TypeVersion) Eval(params ...interface{}) (interface{}, error) {
-	if l := len(params); !(l != 1) {
+	if l := len(params); l != 1 {
 		return false, fmt.Errorf("need only one param, but got %d", l)
 	}
 	if list, ok := params[0].([]interface{}); ok {
-		res := make([]interface{}, 0, len(list))
+		res := make([]float64, 0, len(list))
 		for _, p := range list {
 			v, err := f.Eval(p)
 			if err != nil {
 				return nil, err
 			}
-			res = append(res, v)
+			if t, ok := v.(float64); ok {
+				res = append(res, t)
+			} else {
+				return nil, ErrIllegalFormat
+			}
 		}
 		return res, nil
 	} else {
@@ -414,7 +415,7 @@ func (f TypeVersion) convert(vv interface{}) (float64, error) {
 	}
 	nums := strings.Split(v, ".")
 	if l := len(nums); l < 1 || l > 10 {
-		return 0, ErrParamsInvalid
+		return 0, fmt.Errorf("support at most 10 parts in version")
 	}
 	var version float64
 	e := 5
@@ -423,16 +424,111 @@ func (f TypeVersion) convert(vv interface{}) (float64, error) {
 		if err != nil {
 			return 0, err
 		}
-		version += float64(n) * math.Pow10(2*e)
+		if float64(n) >= math.Pow10(4) {
+			return 0, errors.New("each part of version should not greater than 10000")
+		}
+		version += float64(n) * math.Pow10(4*e)
 		e -= 1
 	}
 	return version, nil
 }
 
-// version format: 2.4.1
-// Examples:
-// (version_compare in "2.7.1" ("2.7.1" "2.7.3"))
-// (version_compare between "2.7.1" "2.7.0" "2.7.6")
-// (version_compare >|<|=|>=|<= "2.7.1" "2.7.0")
-// Eval compares the versions in params on the function provided as first param. The following function are suppoted:
-// in, between, >, <, >=, <=, !=
+type Modulo struct{}
+
+func (f Modulo) Eval(params ...interface{}) (interface{}, error) {
+	if l := len(params); l != 2 {
+		return 0, fmt.Errorf("need two params, but got %d", l)
+	}
+	left, ok := params[0].(int)
+	if !ok {
+		return 0, errors.New("first param should be int")
+	}
+	right, ok := params[0].(int)
+	if !ok {
+		return 0, errors.New("second param should be int")
+	}
+	return left % right, nil
+}
+
+type Add struct{}
+
+func (f Add) Eval(params ...interface{}) (interface{}, error) {
+	if l := len(params); l < 1 {
+		return 0.0, fmt.Errorf("need at least one param, but got %d", l)
+	}
+	var res float64 = 0
+	for _, p := range params {
+		switch v := p.(type) {
+		case int:
+			res += float64(v)
+		case float64:
+			res += v
+		default:
+			return 0.0, errors.New("the type of the params shuold be int or float")
+		}
+	}
+	return res, nil
+}
+
+type Subtract struct{}
+
+func (f Subtract) Eval(params ...interface{}) (interface{}, error) {
+	if l := len(params); l != 2 {
+		return 0.0, fmt.Errorf("need two params, but got %d", l)
+	}
+	operators := make([]float64, 2)
+	for i, p := range params {
+		switch v := p.(type) {
+		case int:
+			operators[i] = float64(v)
+		case float64:
+			operators[i] = v
+		default:
+			return 0.0, errors.New("the type of the params shuold be int or float")
+		}
+	}
+	return operators[0] - operators[1], nil
+}
+
+type Multiply struct{}
+
+func (f Multiply) Eval(params ...interface{}) (interface{}, error) {
+	if l := len(params); l < 1 {
+		return 0.0, fmt.Errorf("need at least one param, but got %d", l)
+	}
+	var res float64 = 0
+	for _, p := range params {
+		switch v := p.(type) {
+		case int:
+			res *= float64(v)
+		case float64:
+			res *= v
+		default:
+			return 0.0, errors.New("the type of the params shuold be int or float")
+		}
+	}
+	return res, nil
+}
+
+type Divide struct{}
+
+func (f Divide) Eval(params ...interface{}) (interface{}, error) {
+	if l := len(params); l != 2 {
+		return 0.0, fmt.Errorf("need two params, but got %d", l)
+	}
+	operators := make([]float64, 2)
+	for i, p := range params {
+		switch v := p.(type) {
+		case int:
+			operators[i] = float64(v)
+		case float64:
+			operators[i] = v
+		default:
+			return 0.0, errors.New("the type of the params shuold be int or float")
+		}
+	}
+	if operators[1] == 0 {
+		return 0.0, errors.New("dividend shuold not be zero")
+	}
+	return operators[0] / operators[1], nil
+}

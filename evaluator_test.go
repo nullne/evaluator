@@ -3,6 +3,19 @@ package evaluator
 import "testing"
 
 func TestBasic(t *testing.T) {
+	params := MapParams{
+		"gender": "female",
+	}
+	res, err := EvalBool(`(in gender ("female" "male"))`, params)
+	if err != nil {
+		t.Error(err)
+	}
+	if res != true {
+		t.Errorf("fuck")
+	}
+}
+
+func TestFuncs(t *testing.T) {
 	// stmt := `(in gender ("female" "male"))`
 	type input struct {
 		expr string
