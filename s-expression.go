@@ -1,3 +1,6 @@
+//
+// there are four basic types, including float64, string and varString. varString is the type of variables or functions which doesn't be quoted. In functions, int64 and float64 can be compared if there is any need.
+// each type has its own array form.
 package evaluator
 
 import (
@@ -26,7 +29,7 @@ func (q varString) String() string {
 	return string(q)
 }
 
-// dynamic types for i are string, qString, int, float64, list
+// dynamic types for i are string, qString, float64, list
 type sexp struct {
 	// type of i must NOT be sexp
 	i interface{}
@@ -187,9 +190,9 @@ func scan(data []byte) (advance int, token interface{}, err error) {
 }
 
 func convert(data []byte) interface{} {
-	if v, err := strconv.Atoi(string(data)); err == nil {
-		return v
-	}
+	// if v, err := strconv.ParseInt(string(data), 10, 0); err == nil {
+	// 	return v
+	// }
 	if v, err := strconv.ParseFloat(string(data), 64); err == nil {
 		return v
 	}

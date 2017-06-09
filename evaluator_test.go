@@ -15,12 +15,11 @@ func TestBasic(t *testing.T) {
 	}
 }
 
-func TestFuncs(t *testing.T) {
+func TestCorrectBooleanFuncs(t *testing.T) {
 	// stmt := `(in gender ("female" "male"))`
 	type input struct {
 		expr string
 		res  interface{}
-		err  error
 	}
 	vvf := MapParams{
 		"gender": "male",
@@ -28,35 +27,14 @@ func TestFuncs(t *testing.T) {
 		"price":  16.7,
 	}
 	inputs := []input{
-		{
-			`(in gender ("female" "male"))`,
-			true,
-			nil,
-		},
-		{
-			`(in age (16 17))`,
-			false,
-			nil,
-		},
-		{
-			`(and (in age (16 17)) (in gender ("female" "male")) )`,
-			false,
-			nil,
-		},
-		{
-			`(in price (16.7 17))`,
-			true,
-			nil,
-		},
-	}
-	for _, input := range inputs {
-		r, err := EvalBool(input.expr, vvf)
-		if err != input.err {
-			t.Error(err)
-		}
-		if r != input.res {
-			t.Errorf("expression `` %s wanna: %+v, got: %+v", input.expr, input.res, r)
-		}
+		{`(in gender ("female" "male"))`, true},
+		{`(not (in gender ("female" "male")))`, false},
+		{`(! (in gender ("female" "male")))`, false},
+		{`(ge (type_version "2.1.1") (type_version "2.1.1"))`, true},
+		{`(gt (type_version "2.1.1") (type_version "2.1.1"))`, false},
+		{`(between (type_version "2.1.1") (type_version "2.1.1") (type_version "2.1.1"))`, true},
+		{`(between (type_version "2.1.1.9999") (type_version "2.1.1") (type_version "2.1.2"))`, true},
+		{`(between (mod age 5) 1 3)`, true},
 	}
 	for _, input := range inputs {
 		e, err := New(input.expr)
@@ -64,7 +42,37 @@ func TestFuncs(t *testing.T) {
 			t.Error(err)
 		}
 		r, err := e.EvalBool(vvf)
-		if err != input.err {
+		if err != nil {
+			t.Error(err)
+		}
+		if r != input.res {
+			t.Errorf("expression `` %s wanna: %+v, got: %+v", input.expr, input.res, r)
+		}
+	}
+}
+
+func TestCorrectFuncs(t *testing.T) {
+	// stmt := `(in gender ("female" "male"))`
+	type input struct {
+		expr string
+		res  interface{}
+	}
+	vvf := MapParams{
+		"gender": "male",
+		"age":    18,
+		"price":  16.7,
+	}
+	inputs := []input{
+		{`(mod age 5)`, 3},
+		{`(+ 10 5)`, 10.5},
+	}
+	for _, input := range inputs {
+		e, err := New(input.expr)
+		if err != nil {
+			t.Error(err)
+		}
+		r, err := e.Eval(vvf)
+		if err != nil {
 			t.Error(err)
 		}
 		if r != input.res {

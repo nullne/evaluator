@@ -1,3 +1,4 @@
+// 一统江湖
 package function
 
 import "errors"
@@ -21,6 +22,7 @@ func Get(name string) (Function, error) {
 	return fn, nil
 }
 
+// params should be one of float64, string, bool, time.Time, or array of each
 type Function interface {
 	Eval(params ...interface{}) (interface{}, error)
 }

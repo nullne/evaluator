@@ -146,7 +146,7 @@ func (f Or) Eval(params ...interface{}) (interface{}, error) {
 }
 
 func logicAndOr(t string, params ...interface{}) (bool, error) {
-	if l := len(params); !(l >= 2) {
+	if l := len(params); l < 2 {
 		return false, fmt.Errorf("need at least two params, but got %d", l)
 	}
 	bs := make([]bool, len(params))
@@ -174,7 +174,7 @@ type Not struct{}
 // Eval returns the result of logic NOT for param which must be type of boolean and the length of params must be 1
 func (f Not) Eval(params ...interface{}) (interface{}, error) {
 	if l := len(params); l != 1 {
-		return false, fmt.Errorf("need only one params, but got %d", l)
+		return false, fmt.Errorf("need only one param, but got %d", l)
 	}
 	b, ok := params[0].(bool)
 	if !ok {
@@ -186,13 +186,50 @@ func (f Not) Eval(params ...interface{}) (interface{}, error) {
 type Equal struct{}
 
 // Eval returns true if all params are euqal to each other, otherwise return false
-func (f Equal) Eval(params ...interface{}) (interface{}, error) {
+func (f Equal) Eval(params ...interface{}) (res interface{}, err error) {
+	return recursiveCompareEquality{}.eval("==", params...)
+}
+
+type recursiveCompareEquality struct{}
+
+func (f recursiveCompareEquality) eval(op string, params ...interface{}) (res bool, err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			res = false
+			err = fmt.Errorf("%v", e)
+		}
+	}()
+
 	if l := len(params); l < 2 {
 		return false, fmt.Errorf("need at least two params, but got %d", l)
 	}
-	for _, p := range params[1:] {
-		if p != params[0] {
-			return false, nil
+	if first, ok := params[0].([]interface{}); ok {
+		for i := 0; i < len(first); i++ {
+			ps := make([]interface{}, len(params))
+			for j := 0; j < len(params); j++ {
+				ps[j] = params[j].([]interface{})[i]
+			}
+			res, err := f.eval(op, ps...)
+			if err != nil {
+				return false, err
+			}
+			if !res {
+				return false, err
+			}
+		}
+		return true, nil
+	} else {
+		for _, p := range params[1:] {
+			switch op {
+			case "==":
+				if p != params[0] {
+					return false, nil
+				}
+			case "!=":
+				if p == params[0] {
+					return false, nil
+				}
+			}
 		}
 	}
 	return true, nil
@@ -202,17 +239,7 @@ type NotEqual struct{}
 
 // Eval returns true if all params are NOT euqal to each other, otherwise return false
 func (f NotEqual) Eval(params ...interface{}) (interface{}, error) {
-	if l := len(params); l < 2 {
-		return false, fmt.Errorf("need at least two params, but got %d", l)
-	}
-	for i := 0; i < len(params); i++ {
-		for j := i + 1; j < len(params); j++ {
-			if params[i] == params[j] {
-				return false, nil
-			}
-		}
-	}
-	return true, nil
+	return recursiveCompareEquality{}.eval("!=", params...)
 }
 
 type GreaterThan struct{}
@@ -250,8 +277,8 @@ func (f *compare) eval(op string, params ...interface{}) (interface{}, error) {
 	if l := len(params); l != 2 {
 		return false, fmt.Errorf("need two params, but got %d", l)
 	}
-	if reflect.TypeOf(params[0]) != reflect.TypeOf(params[1]) {
-		return false, fmt.Errorf("type of two params are mistatch")
+	if !convertible(params...) {
+		return false, fmt.Errorf("type of two params are mismatch")
 	}
 	exists := false
 	for _, o := range []string{">", ">=", "<", "<="} {
@@ -264,46 +291,53 @@ func (f *compare) eval(op string, params ...interface{}) (interface{}, error) {
 	}
 
 	switch left := params[0].(type) {
-	case int:
-		return f.evalFloat64(op, float64(left), float64(params[1].(int))), nil
-	case float64:
-		return f.evalFloat64(op, left, params[1].(float64)), nil
 	case string:
-		return f.evalString(op, left, params[1].(string)), nil
+		switch op {
+		case ">":
+			return left > params[1].(string), nil
+		case "<":
+			return left < params[1].(string), nil
+		case ">=":
+			return left >= params[1].(string), nil
+		case "<=":
+			return left <= params[1].(string), nil
+		}
+		return false, nil
+	case float64:
+		switch op {
+		case ">":
+			return left > params[1].(float64), nil
+		case "<":
+			return left < params[1].(float64), nil
+		case ">=":
+			return left >= params[1].(float64), nil
+		case "<=":
+			return left <= params[1].(float64), nil
+		}
+		return false, nil
 	case time.Time:
 		return f.evalTime(op, left, params[1].(time.Time)), nil
-
 	default:
+		l, err := toFloat64(left)
+		if err != nil {
+			return false, err
+		}
+		r, err := toFloat64(params[1])
+		if err != nil {
+			return false, err
+		}
+		switch op {
+		case ">":
+			return l > r, nil
+		case "<":
+			return l < r, nil
+		case ">=":
+			return l >= r, nil
+		case "<=":
+			return l <= r, nil
+		}
 		return false, ErrNotFound
 	}
-}
-
-func (f *compare) evalFloat64(op string, left, right float64) bool {
-	switch op {
-	case ">":
-		return left > right
-	case "<":
-		return left < right
-	case ">=":
-		return left >= right
-	case "<=":
-		return left <= right
-	}
-	return false
-}
-
-func (f *compare) evalString(op string, left, right string) bool {
-	switch op {
-	case ">":
-		return left > right
-	case "<":
-		return left < right
-	case ">=":
-		return left >= right
-	case "<=":
-		return left <= right
-	}
-	return false
 }
 
 func (f *compare) evalTime(op string, left, right time.Time) bool {
@@ -439,13 +473,13 @@ func (f Modulo) Eval(params ...interface{}) (interface{}, error) {
 	if l := len(params); l != 2 {
 		return 0, fmt.Errorf("need two params, but got %d", l)
 	}
-	left, ok := params[0].(int)
-	if !ok {
-		return 0, errors.New("first param should be int")
+	left, err := toInt64(params[0])
+	if err != nil {
+		return 0, err
 	}
-	right, ok := params[0].(int)
-	if !ok {
-		return 0, errors.New("second param should be int")
+	right, err := toInt64(params[1])
+	if err != nil {
+		return 0, err
 	}
 	return left % right, nil
 }
@@ -531,4 +565,45 @@ func (f Divide) Eval(params ...interface{}) (interface{}, error) {
 		return 0.0, errors.New("dividend shuold not be zero")
 	}
 	return operators[0] / operators[1], nil
+}
+
+var (
+	tFloat64 = reflect.TypeOf(float64(0))
+	tInt64   = reflect.TypeOf(int64(0))
+)
+
+func toFloat64(uv interface{}) (float64, error) {
+	v := reflect.ValueOf(uv)
+	v = reflect.Indirect(v)
+	if !v.Type().ConvertibleTo(tFloat64) {
+		return 0, fmt.Errorf("cannot convert %v to float64", v.Type())
+	}
+	fv := v.Convert(tFloat64)
+	return fv.Float(), nil
+}
+
+func toInt64(uv interface{}) (int64, error) {
+	v := reflect.ValueOf(uv)
+	v = reflect.Indirect(v)
+	if !v.Type().ConvertibleTo(tInt64) {
+		return 0, fmt.Errorf("cannot convert %v to float64", v.Type())
+	}
+	fv := v.Convert(tInt64)
+	return fv.Int(), nil
+}
+
+func convertible(params ...interface{}) bool {
+	if len(params) < 2 {
+		return true
+	}
+	left := params[0]
+	t := reflect.TypeOf(left)
+	for _, p := range params[1:] {
+		v := reflect.ValueOf(p)
+		v = reflect.Indirect(v)
+		if !v.Type().ConvertibleTo(t) {
+			return false
+		}
+	}
+	return true
 }

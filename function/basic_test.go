@@ -45,23 +45,23 @@ func TestIn(t *testing.T) {
 
 func TestBetween(t *testing.T) {
 	inputs := []res{
-		{[]interface{}{100, 10, 1000}, true, false},
+		{[]interface{}{100.0, 10.0, 1000.0}, true, false},
 		{[]interface{}{100.0, 10.0, 1000.0}, true, false},
 		{[]interface{}{"b", "a", "c"}, true, false},
 		{[]interface{}{time.Now(), time.Now().Add(-100 * time.Second), time.Now()}, true, false},
 		{[]interface{}{"b", "c"}, false, true},
 		{[]interface{}{"b", "c", "b", "c"}, false, true},
 		{[]interface{}{100.0, 10, 1000.0}, false, true},
-		{[]interface{}{100.0, 10, []int{1000}}, false, true},
+		{[]interface{}{100.0, 10.0, []int{1000.0}}, false, true},
 		{[]interface{}{time.Now(), time.Now(), time.Now()}, false, false},
-		{[]interface{}{100, 101, 1000}, false, false},
+		{[]interface{}{100.0, 101.0, 1000.0}, false, false},
 	}
 	fn := Between{}
 	for _, input := range inputs {
 		res, err := fn.Eval(input.params...)
 		if input.err {
 			if err == nil {
-				t.Error("shoud have errors but got none")
+				t.Errorf("input: %v, shoud have errors but got none", input.params)
 				continue
 			}
 		} else {
@@ -163,8 +163,11 @@ func TestNot(t *testing.T) {
 }
 
 func TestEqual(t *testing.T) {
+	now := time.Now()
 	inputs := []res{
-		{[]interface{}{100, 100}, true, false},
+		{[]interface{}{100.0, 100.0}, true, false},
+		{[]interface{}{now, now}, true, false},
+		{[]interface{}{[]interface{}{now}, []interface{}{now}}, true, false},
 		{[]interface{}{true, true}, true, false},
 		{[]interface{}{"100", "100", "100", "100"}, true, false},
 		{[]interface{}{100, 100, "200"}, false, false},
@@ -192,8 +195,9 @@ func TestEqual(t *testing.T) {
 
 func TestNotEqual(t *testing.T) {
 	inputs := []res{
-		{[]interface{}{100, 200}, true, false},
+		{[]interface{}{100.0, 200.0}, true, false},
 		{[]interface{}{true, false}, true, false},
+		{[]interface{}{[]interface{}{true}, []interface{}{false}}, true, false},
 		{[]interface{}{"100", "200", "300", "400"}, true, false},
 		{[]interface{}{100, 100.0, "100"}, true, false},
 		{[]interface{}{"100", "200", "100", "100"}, false, false},
@@ -221,20 +225,20 @@ func TestNotEqual(t *testing.T) {
 
 func TestGreaterThan(t *testing.T) {
 	inputs := []res{
-		{[]interface{}{100, 10}, true, false},
+		{[]interface{}{100.0, 10.0}, true, false},
 		{[]interface{}{100.0, 10.0}, true, false},
 		{[]interface{}{"c", "b"}, true, false},
 		{[]interface{}{time.Now(), time.Now()}, false, false},
 		{[]interface{}{100, 10.0}, false, true},
-		{[]interface{}{100, uint(10)}, false, true},
-		{[]interface{}{100}, false, true},
+		{[]interface{}{100.0, uint(10)}, false, true},
+		{[]interface{}{100.0}, false, true},
 	}
 	fn := GreaterThan{}
 	for _, input := range inputs {
 		res, err := fn.Eval(input.params...)
 		if input.err {
 			if err == nil {
-				t.Error("shoud have errors but got none")
+				t.Errorf("input: %v, shoud have errors but got none", input.params)
 				continue
 			}
 		} else {
