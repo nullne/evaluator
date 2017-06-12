@@ -219,16 +219,50 @@ func (f recursiveCompareEquality) eval(op string, params ...interface{}) (res bo
 		}
 		return true, nil
 	} else {
-		for _, p := range params[1:] {
-			switch op {
-			case "==":
-				if p != params[0] {
-					return false, nil
+		toFloat64 := false
+		switch params[0].(type) {
+		case string, time.Time:
+		default:
+			toFloat64 = true
+		}
+		if toFloat64 {
+			return f.evalFloat64(op, params...)
+		} else {
+			for _, p := range params[1:] {
+				switch op {
+				case "==":
+					if p != params[0] {
+						return false, nil
+					}
+				case "!=":
+					if p == params[0] {
+						return false, nil
+					}
 				}
-			case "!=":
-				if p == params[0] {
-					return false, nil
-				}
+			}
+		}
+	}
+	return true, nil
+}
+
+func (f recursiveCompareEquality) evalFloat64(op string, params ...interface{}) (res bool, err error) {
+	left, err := toFloat64(params[0])
+	if err != nil {
+		return false, err
+	}
+	for _, p := range params[1:] {
+		right, err := toFloat64(p)
+		if err != nil {
+			return false, err
+		}
+		switch op {
+		case "==":
+			if left != right {
+				return false, nil
+			}
+		case "!=":
+			if left == right {
+				return false, nil
 			}
 		}
 	}

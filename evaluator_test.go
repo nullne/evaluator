@@ -63,8 +63,9 @@ func TestCorrectFuncs(t *testing.T) {
 		"price":  16.7,
 	}
 	inputs := []input{
-		{`(mod age 5)`, 3},
-		{`(+ 10 5)`, 10.5},
+		{`(eq (mod age 5) 3.0)`, true},
+		{`(eq (+ 10 5) 15)`, true},
+		{`(eq (/ 10 0) 0)`, true},
 	}
 	for _, input := range inputs {
 		e, err := New(input.expr)
