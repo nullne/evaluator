@@ -1,6 +1,9 @@
 package evaluator
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestBasic(t *testing.T) {
 	params := MapParams{
@@ -21,10 +24,14 @@ func TestCorrectBooleanFuncs(t *testing.T) {
 		expr string
 		res  interface{}
 	}
+	now1 := time.Now().Format("2006-01-02 15:04:05")
+	now2 := time.Now().Format("2006-01-02 15:04:05")
 	vvf := MapParams{
 		"gender": "male",
 		"age":    18,
 		"price":  16.7,
+		"now1":   now1,
+		"now2":   now2,
 	}
 	inputs := []input{
 		{`(in gender ("female" "male"))`, true},
@@ -35,6 +42,7 @@ func TestCorrectBooleanFuncs(t *testing.T) {
 		{`(between (type_version "2.1.1") (type_version "2.1.1") (type_version "2.1.1"))`, true},
 		{`(between (type_version "2.1.1.9999") (type_version "2.1.1") (type_version "2.1.2"))`, true},
 		{`(between (mod age 5) 1 3)`, true},
+		{`(between (type_default_time now1) (type_default_time now1) (type_default_time now2))`, true},
 	}
 	for _, input := range inputs {
 		e, err := New(input.expr)
@@ -52,7 +60,6 @@ func TestCorrectBooleanFuncs(t *testing.T) {
 }
 
 func TestCorrectFuncs(t *testing.T) {
-	// stmt := `(in gender ("female" "male"))`
 	type input struct {
 		expr string
 		res  interface{}
@@ -65,7 +72,7 @@ func TestCorrectFuncs(t *testing.T) {
 	inputs := []input{
 		{`(eq (mod age 5) 3.0)`, true},
 		{`(eq (+ 10 5) 15)`, true},
-		{`(eq (/ 10 0) 0)`, true},
+		{`(eq (/ 10 5) 2)`, true},
 	}
 	for _, input := range inputs {
 		e, err := New(input.expr)
@@ -77,7 +84,7 @@ func TestCorrectFuncs(t *testing.T) {
 			t.Error(err)
 		}
 		if r != input.res {
-			t.Errorf("expression `` %s wanna: %+v, got: %+v", input.expr, input.res, r)
+			t.Errorf("expression `%s` wanna: %+v, got: %+v", input.expr, input.res, r)
 		}
 	}
 }
