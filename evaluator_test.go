@@ -1,8 +1,11 @@
 package evaluator
 
 import (
+	"errors"
 	"testing"
 	"time"
+
+	"github.com/nullne/evaluator/function"
 )
 
 func TestBasic(t *testing.T) {
@@ -86,5 +89,53 @@ func TestCorrectFuncs(t *testing.T) {
 		if r != input.res {
 			t.Errorf("expression `%s` wanna: %+v, got: %+v", input.expr, input.res, r)
 		}
+	}
+}
+
+type age struct{}
+
+func (f age) Eval(params ...interface{}) (interface{}, error) {
+	if len(params) != 1 {
+		return nil, errors.New("only one params accepted")
+	}
+	birth, ok := params[0].(string)
+	if !ok {
+		return nil, errors.New("birth format need to be string")
+	}
+	r, err := time.Parse("2006-01-02", birth)
+	if err != nil {
+		return nil, err
+	}
+	now := time.Now()
+	a := r.Year() - now.Year()
+	if r.Month() < now.Month() {
+		a--
+	} else if r.Month() == now.Month() {
+		if r.Day() < now.Day() {
+			a--
+		}
+	}
+	return a, nil
+}
+
+func TestDIVFunc(t *testing.T) {
+	if err := function.Regist("age", age{}); err != nil {
+		t.Error(err)
+	}
+
+	exp := `(not (between (age birthdate) 18 20))`
+	vvf := MapParams{
+		"birthdate": "2018-02-01",
+	}
+	e, err := New(exp)
+	if err != nil {
+		t.Error(err)
+	}
+	r, err := e.Eval(vvf)
+	if err != nil {
+		t.Error(err)
+	}
+	if r != true {
+		t.Errorf("expression `%s` wanna: %+v, got: %+v", exp, true, r)
 	}
 }
