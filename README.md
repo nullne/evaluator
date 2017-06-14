@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/nullne/evaluator.svg?branch=master)](https://travis-ci.org/nullne/evaluator.svg?branch=master)
-[![Coverage Status](https://coveralls.io/repos/github/nullne/evaluator/badge.svg?branch=master)](https://coveralls.io/github/nullne/evaluator?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/nullne/evaluator/badge.svg)](https://coveralls.io/github/nullne/evaluator)
 [![GoDoc](https://godoc.org/github.com/nullne/evaluator?status.svg)](http://godoc.org/github.com/nullne/evaluator)
 [![Go Report Card](https://goreportcard.com/badge/github.com/nullne/evaluator)](https://goreportcard.com/report/github.com/nullne/evaluator)
 
