@@ -28,7 +28,7 @@ func TestIn(t *testing.T) {
 	inputs := []res{
 		{[]interface{}{100, []interface{}{100, 200, 300}}, true, false},
 		{[]interface{}{now, []interface{}{now, time.Now()}}, true, false},
-		{[]interface{}{100.0, []interface{}{100.0, 200.0, 300.0}}, true, false},
+		{[]interface{}{100.00000000000000000000000000000000001, []interface{}{100.00000000000000000000000000000000001, 200.0, 300.0}}, true, false},
 		{[]interface{}{"100", []interface{}{"100", "200", "300"}}, true, false},
 		{[]interface{}{100.0, []interface{}{100, 200, 300}}, true, false},
 		{[]interface{}{true, []interface{}{false, true}}, true, false},
