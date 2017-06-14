@@ -137,3 +137,59 @@ func TestDIVFunc(t *testing.T) {
 		t.Errorf("expression `%s` wanna: %+v, got: %+v", exp, true, r)
 	}
 }
+
+func BenchmarkEvalTimeBetweenReuseExpression(b *testing.B) {
+	expr, err := New(`(between (td_date "2017-01-05") (td_date "2017-01-01") (td_date "2017-01-10"))`)
+	if err != nil {
+		b.Error(err)
+	}
+	for n := 0; n < b.N; n++ {
+		r, err := expr.EvalBool(nil)
+		if err != nil {
+			b.Error(err)
+		}
+		if r != true {
+			b.Error("wrong result")
+		}
+	}
+}
+
+func BenchmarkEvalTimeBetween(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		r, err := EvalBool(`(between (td_date "2017-01-05") (td_date "2017-01-01") (td_date "2017-01-10"))`, nil)
+		if err != nil {
+			b.Error(err)
+		}
+		if r != true {
+			b.Error("wrong result")
+		}
+	}
+}
+
+func BenchmarkEvalEqualReuseExpression(b *testing.B) {
+	expr, err := New(`(eq "male" "female")`)
+	if err != nil {
+		b.Error(err)
+	}
+	for n := 0; n < b.N; n++ {
+		r, err := expr.EvalBool(nil)
+		if err != nil {
+			b.Error(err)
+		}
+		if r != false {
+			b.Error("wrong result")
+		}
+	}
+}
+
+func BenchmarkEvalEqual(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		r, err := EvalBool(`(eq "male" "female")`, nil)
+		if err != nil {
+			b.Error(err)
+		}
+		if r != false {
+			b.Error("wrong result")
+		}
+	}
+}

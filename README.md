@@ -175,3 +175,13 @@ here is an example:
 #### Params
 - `Params` interface, which has a method named `Get` to get all params needed
 - `MapParams` a simple implemented `Params` in `map`
+
+#### Bench
+	# expression: (between (td_date "2017-01-05") (td_date "2017-01-01") (td_date "2017-01-10"))
+	BenchmarkEvalTimeBetweenReuseExpression-8   	 1000000	      1901 ns/op
+	BenchmarkEvalTimeBetween-8                  	  200000	      6333 ns/op
+	# expression (eq "male" "female")
+	BenchmarkEvalEqualReuseExpression-8         	 2000000	       670 ns/op
+	BenchmarkEvalEqual-8                        	 1000000	      2323 ns/op
+
+p.s. on MacBook Pro (Retina, 15-inch, Mid 2015), Memory: 16 GB 1600 MHz DDR3, Processor: 2.2 GHz Intel Core i7
