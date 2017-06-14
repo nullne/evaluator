@@ -40,12 +40,12 @@ func TestCorrectBooleanFuncs(t *testing.T) {
 		{`(in gender ("female" "male"))`, true},
 		{`(not (in gender ("female" "male")))`, false},
 		{`(! (in gender ("female" "male")))`, false},
-		{`(ge (type_version "2.1.1") (type_version "2.1.1"))`, true},
-		{`(gt (type_version "2.1.1") (type_version "2.1.1"))`, false},
-		{`(between (type_version "2.1.1") (type_version "2.1.1") (type_version "2.1.1"))`, true},
-		{`(between (type_version "2.1.1.9999") (type_version "2.1.1") (type_version "2.1.2"))`, true},
+		{`(ge (t_version "2.1.1") (t_version "2.1.1"))`, true},
+		{`(gt (t_version "2.1.1") (t_version "2.1.1"))`, false},
+		{`(between (t_version "2.1.1") (t_version "2.1.1") (t_version "2.1.1"))`, true},
+		{`(between (t_version "2.1.1.9999") (t_version "2.1.1") (t_version "2.1.2"))`, true},
 		{`(between (mod age 5) 1 3)`, true},
-		{`(between (type_default_time now1) (type_default_time now1) (type_default_time now2))`, true},
+		{`(between (td_time now1) (td_time now1) (td_time now2))`, true},
 	}
 	for _, input := range inputs {
 		e, err := New(input.expr)
@@ -92,34 +92,32 @@ func TestCorrectFuncs(t *testing.T) {
 	}
 }
 
-type age struct{}
-
-func (f age) Eval(params ...interface{}) (interface{}, error) {
-	if len(params) != 1 {
-		return nil, errors.New("only one params accepted")
-	}
-	birth, ok := params[0].(string)
-	if !ok {
-		return nil, errors.New("birth format need to be string")
-	}
-	r, err := time.Parse("2006-01-02", birth)
-	if err != nil {
-		return nil, err
-	}
-	now := time.Now()
-	a := r.Year() - now.Year()
-	if r.Month() < now.Month() {
-		a--
-	} else if r.Month() == now.Month() {
-		if r.Day() < now.Day() {
-			a--
-		}
-	}
-	return a, nil
-}
-
 func TestDIVFunc(t *testing.T) {
-	if err := function.Regist("age", age{}); err != nil {
+	age := func(params ...interface{}) (interface{}, error) {
+		if len(params) != 1 {
+			return nil, errors.New("only one params accepted")
+		}
+		birth, ok := params[0].(string)
+		if !ok {
+			return nil, errors.New("birth format need to be string")
+		}
+		r, err := time.Parse("2006-01-02", birth)
+		if err != nil {
+			return nil, err
+		}
+		now := time.Now()
+		a := r.Year() - now.Year()
+		if r.Month() < now.Month() {
+			a--
+		} else if r.Month() == now.Month() {
+			if r.Day() < now.Day() {
+				a--
+			}
+		}
+		return a, nil
+	}
+
+	if err := function.Regist("age", age); err != nil {
 		t.Error(err)
 	}
 

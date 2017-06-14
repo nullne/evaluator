@@ -1,4 +1,3 @@
-// 一统江湖
 package function
 
 import "errors"
@@ -11,10 +10,10 @@ var (
 )
 
 var (
-	functions map[string]Function = make(map[string]Function)
+	functions map[string]Func = make(map[string]Func)
 )
 
-func Get(name string) (Function, error) {
+func Get(name string) (Func, error) {
 	fn, exists := functions[name]
 	if !exists {
 		return nil, ErrNotFound
@@ -22,12 +21,25 @@ func Get(name string) (Function, error) {
 	return fn, nil
 }
 
-// params should be one of float64, string, bool, time.Time, or array of each
-type Function interface {
+type Funcer interface {
 	Eval(params ...interface{}) (interface{}, error)
 }
 
-func Regist(name string, fn Function) error {
+type Func func(params ...interface{}) (interface{}, error)
+
+func RegistFuncer(name string, fn Funcer) error {
+	if _, exist := functions[name]; exist {
+		return ErrFunctionExists
+	}
+	functions[name] = fn.Eval
+	return nil
+}
+
+func MustRegistFuncer(name string, fn Funcer) {
+	functions[name] = fn.Eval
+}
+
+func Regist(name string, fn Func) error {
 	if _, exist := functions[name]; exist {
 		return ErrFunctionExists
 	}
@@ -35,6 +47,6 @@ func Regist(name string, fn Function) error {
 	return nil
 }
 
-func MustRegist(name string, fn Function) {
+func MustRegist(name string, fn Func) {
 	functions[name] = fn
 }

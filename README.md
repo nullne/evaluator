@@ -1,7 +1,37 @@
-It's a common case to evaluate an expression in hot.
-#### Expression syntax
+It's very common to evaluate an expression dynamicly, so that's why we are here.  
+#### S-expression
 We use s-epxression syntax to parse and evaluate.
 > In computing, s-expressions, sexprs or sexps (for "symbolic expression") are a notation for nested list (tree-structured) data, invented for and popularized by the programming language Lisp, which uses them for source code as well as data. 
+
+For example, for expression in common way:
+	
+	(
+			(gender = "female")
+	 and  
+	 		((age % 2) != 0)
+	 )
+it's coresponding format in s-expression is:
+	
+	(and
+		(= gender "female")
+		(!= 
+			(% age 2)
+			0
+		)
+	)
+
+####Element types within expression
+- number  
+	For convenience, we treat float64, int64 and so on as type of number. For example, float `100.0` is equal to int `100`, but not euqal to string `"100"`
+
+- string  
+   character string quoted with `` ` ``, `'`, or `"` are treated as type of `string`. You can convert type `string` to any other defined type you like by type convert functions which are mentioned later
+
+- function or variable  
+    character string without quotes are regared as type of `function` or `variable` which depends on whether this function exists. For example in expression `(age birthdate)`, both `age` and `birthdate` is unquoted. `age` is type of function because we have registered a function named `age`, while `birthdate` is type of variable for not found, which means the program will come to error if there is no parameter named `birthdate` when evaluating
+
+	 
+
 
 
 #### How to
@@ -33,7 +63,7 @@ or you can reuse the `Expression` to evaluate multiple times:
     fmt.Println(res)
     # true
 
-#### And you can write expressions like this
+##### And you can write expressions like this
 - `(in gender ("male", "female"))`
 - `(between now (type_default_time "2017-01-02 12:00:00") (type_default_time "2017-12-02 12:00:00"))`
 - `(ne (mod (age birthdate) 7) 5)`
@@ -50,30 +80,41 @@ or you can reuse the `Expression` to evaluate multiple times:
 
 #### Functions
 ##### Implemented functions
-- in
-- between
-- and
-- or
-- not
-- equal
-- not equal
-- greater than
-- less than
-- greater than or equal to
-- less than or equal to
-- mod
-- plus
-- minus
-- multiply
-- divide
-- type version
-- type time
-- type default time
-- type default date
 
+ 
+| operand | function  | example | description 
+| ------- | --------- | ---------- | ----
+| -       | `in`      | `(in 1 (1 2))` | 
+| -       | `between` |
+| `&`     | `and`     |
+| `|`     | `or`      |
+| `!`     | `not`     |
+| `=`     | `eq`      | equal
+| `!=`    | `ne`      | not equal
+| `>`     | `gt`      | greater than
+| `<`     | `lt`      |less than
+| `>=`    | `ge`      |greater than or equal to
+| `<=`    | `le`      |less than or equal to
+| `%`     | `mod`     |
+| `+`     | -         |plus 
+| `-`     | -         |minus
+| `*`     | -         |multiply
+| `/`     | -         |divide
+| -       | `t_version` | type version
+| -       | `t_time`    |type time
+| -       | `td_time` | type default time
+| _       | `td_date`    | type default date
 
+p.s. either operand or function can be used in expression
 ##### How to use self-defined functions
-Yes, you can write your own function.
+Yes, you can write your own function by following thses steps:
+
+1. implement your function
+2. regist to functions
+3. enjoy it
+
+here is an example:
+
 	package main
 	
 	import (

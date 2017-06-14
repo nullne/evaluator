@@ -61,7 +61,7 @@ func (exp sexp) evaluate(ps Params) (interface{}, error) {
 		}
 		if isFunc {
 			fn, _ := function.Get(string(l[0].i.(varString)))
-			return fn.Eval(params...)
+			return fn(params...)
 		} else {
 			return append(make([]interface{}, 0, len(params)), params...), nil
 		}
