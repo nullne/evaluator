@@ -25,7 +25,7 @@ it's coresponding format in s-expression is:
 		)
 	)
 
-####Element types within expression
+#### Element types within expression
 - number  
 	For convenience, we treat float64, int64 and so on as type of number. For example, float `100.0` is equal to int `100`, but not euqal to string `"100"`
 
@@ -33,11 +33,8 @@ it's coresponding format in s-expression is:
    character string quoted with `` ` ``, `'`, or `"` are treated as type of `string`. You can convert type `string` to any other defined type you like by type convert functions which are mentioned later
 
 - function or variable  
-    character string without quotes are regared as type of `function` or `variable` which depends on whether this function exists. For example in expression `(age birthdate)`, both `age` and `birthdate` is unquoted. `age` is type of function because we have registered a function named `age`, while `birthdate` is type of variable for not found, which means the program will come to error if there is no parameter named `birthdate` when evaluating
-
-	 
-
-
+    character string without quotes are regarded as type of `function` or `variable` which depends on whether this function exists. For example in expression `(age birthdate)`, both `age` and `birthdate` is unquoted. `age` is type of function because we have registered a function named `age`, while `birthdate` is type of variable for not found. The program will come to errors if there is neither parameter nor function named `birthdate` when evaluating
+	
 
 #### How to
 You can evaluate directly:
@@ -70,7 +67,7 @@ or you can reuse the `Expression` to evaluate multiple times:
 
 ##### And you can write expressions like this
 - `(in gender ("male", "female"))`
-- `(between now (type_default_time "2017-01-02 12:00:00") (type_default_time "2017-12-02 12:00:00"))`
+- `(between now (td_time "2017-01-02 12:00:00") (td_time "2017-12-02 12:00:00"))`
 - `(ne (mod (age birthdate) 7) 5)`
 - or multiple-line for clarity
 
@@ -89,26 +86,26 @@ or you can reuse the `Expression` to evaluate multiple times:
  
 | operand | function  | example | description 
 | ------- | --------- | ---------- | ----
-| -       | `in`      | `(in 1 (1 2))` | 
-| -       | `between` |
-| `&`     | `and`     |
+| -       | `in`      | `(in 1 (1 2))` | also suport array like `(in (1) ((1)))`
+| -       | `between` | `(between age 18 20)` 
+| `&`     | `and`     | `(and (eq gender "femal") (between age 18 20))`
 | `|`     | `or`      |
 | `!`     | `not`     |
-| `=`     | `eq`      | equal
-| `!=`    | `ne`      | not equal
-| `>`     | `gt`      | greater than
-| `<`     | `lt`      |less than
-| `>=`    | `ge`      |greater than or equal to
-| `<=`    | `le`      |less than or equal to
+| `=`     | `eq`      | | equal
+| `!=`    | `ne`      | | not equal
+| `>`     | `gt`      | | greater than
+| `<`     | `lt`      | | less than
+| `>=`    | `ge`      | | greater than or equal to
+| `<=`    | `le`      | | less than or equal to
 | `%`     | `mod`     |
-| `+`     | -         |plus 
-| `-`     | -         |minus
-| `*`     | -         |multiply
-| `/`     | -         |divide
-| -       | `t_version` | type version
-| -       | `t_time`    |type time
-| -       | `td_time` | type default time
-| _       | `td_date`    | type default date
+| `+`     | -         | | plus 
+| `-`     | -         | | minus
+| `*`     | -         | | multiply
+| `/`     | -         | | divide
+| -       | `t_version` ||  convert type to version
+| -       | `t_time`    |`(t_time "2006-01-02 15:04" "2017-09-09 12:00")`| convert type to time, first param must be the layout for the time
+| -       | `td_time` |`(td_time "2017:09:09 12:00:00)`| convert type to time of default layout format `2006-01-02 15:04:05`
+| _       | `td_date`    |`(in (td_date now) (td_date ("2017-01-02" "2017-02-01")) )`| convert type to time  of default layout format `2006-01-02`
 
 p.s. either operand or function can be used in expression
 ##### How to use self-defined functions
@@ -175,3 +172,6 @@ here is an example:
 		}
 		log.Printf("expression: `%s`, wanna: %+v, got: %+v\r", exp, true, r)
 	}
+#### Params
+- `Params` interface, which has a method named `Get` to get all params needed
+- `MapParams` a simple implemented `Params` in `map`
