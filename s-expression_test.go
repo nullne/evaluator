@@ -10,6 +10,8 @@ func TestFscan(t *testing.T) {
 		err error
 	}
 	inputs := []input{
+		{` `, nil},
+		{`"\\\\"`, nil},
 		{`a`, nil},
 		{`(a)`, nil},
 		{`(a b c)`, nil},
@@ -33,6 +35,22 @@ func TestFscan(t *testing.T) {
 			t.Errorf("wanna: %v, got: %v", input.err, err)
 		}
 	}
+}
+
+func ExampleExpression() {
+	s := `(!(a b )())`
+	exp, err := parse(s)
+	if err != nil {
+		return
+	}
+	exp.dump(0)
+	// Output:
+	// evaluator.list: 3 elements: [! [a b] []]
+	//    evaluator.varString: !
+	//    evaluator.list: 2 elements: [a b]
+	//       evaluator.varString: a
+	//       evaluator.varString: b
+	//    evaluator.list: 0 elements: []
 }
 
 func TestFscanStringWithQuotesStriped(t *testing.T) {

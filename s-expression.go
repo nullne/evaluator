@@ -38,40 +38,27 @@ type sexp struct {
 func (exp sexp) evaluate(ps Params) (interface{}, error) {
 	if l, isList := exp.i.(list); isList {
 		if len(l) == 0 {
-			return l, nil
-		}
-		isFunc := false
-		if name, ok := l[0].i.(varString); ok {
-			if _, err := function.Get(string(name)); err == nil {
-				isFunc = true
-			}
+			return make([]interface{}, 0), nil
 		}
 
 		params := make([]interface{}, 0, len(l))
-		tl := l
-		if isFunc {
-			tl = l[1:]
-		}
-		for _, p := range tl {
+		for _, p := range l {
 			v, err := p.evaluate(ps)
 			if err != nil {
 				return nil, err
 			}
 			params = append(params, v)
 		}
-		if isFunc {
-			fn, _ := function.Get(string(l[0].i.(varString)))
-			return fn(params...)
+		if fn, ok := params[0].(function.Func); ok {
+			return fn(params[1:]...)
 		} else {
-			// TODO why this
-			// return append(make([]interface{}, 0, len(params)), params...), nil
 			return params, nil
 		}
 	} else {
 		if val, ok := exp.i.(varString); ok {
 			s := string(val)
-			if _, err := function.Get(s); err == nil {
-				return s, nil
+			if fn, err := function.Get(s); err == nil {
+				return fn, nil
 			}
 			return ps.Get(s)
 		}
@@ -133,12 +120,12 @@ func (s sexp) String() string {
 func (s sexp) dump(i int) {
 	fmt.Printf("%*s%v: ", i*3, "", reflect.TypeOf(s.i))
 	if l, isList := s.i.(list); isList {
-		fmt.Println(len(l), "elements")
+		fmt.Printf("%d elements: %s\n", len(l), l)
 		for _, e := range l {
 			e.dump(i + 1)
 		}
 	} else {
-		fmt.Println(s.i)
+		fmt.Println(s)
 	}
 }
 
@@ -234,7 +221,7 @@ func scanStringWithQuotesStriped(data []byte) (advance int, token []byte, err er
 			ecp = i
 		}
 		if data[i] == delim {
-			escapeEscaped := continuousCharacterCountFromBack(data[:i], '\\')%2 == 0
+			escapeEscaped := continuousCharacterCountFromBack(data[1:i], '\\')%2 == 0
 			if ecp == i-1 && !escapeEscaped {
 				ecps = append(ecps, ecp-1)
 			} else {

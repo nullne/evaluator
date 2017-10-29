@@ -181,13 +181,7 @@ func Between(params ...interface{}) (interface{}, error) {
 	}
 
 	le, err := Compare{ModeLessThanOrEqualTo}.Eval(params[0], params[2])
-	if err != nil {
-		return false, err
-	}
-	if !le.(bool) {
-		return false, nil
-	}
-	return true, nil
+	return le.(bool), err
 }
 
 type AndOr struct {
@@ -244,6 +238,11 @@ func (f Equal) Eval(params ...interface{}) (res interface{}, err error) {
 		return false, fmt.Errorf("need at least two params, but got %d", l)
 	}
 	if first, ok := params[0].([]interface{}); ok {
+		for i := 1; i < len(params); i++ {
+			if len(first) != len(params[i].([]interface{})) {
+				return false, nil
+			}
+		}
 		for i := 0; i < len(first); i++ {
 			ps := make([]interface{}, len(params))
 			for j := 0; j < len(params); j++ {
@@ -277,10 +276,7 @@ func (f Equal) Eval(params ...interface{}) (res interface{}, err error) {
 }
 
 func (f Equal) evalFloat64(params ...interface{}) (res bool, err error) {
-	left, err := toFloat64(params[0])
-	if err != nil {
-		return false, err
-	}
+	left, _ := toFloat64(params[0])
 	for _, p := range params[1:] {
 		right, err := toFloat64(p)
 		if err != nil {
@@ -310,6 +306,11 @@ func NotEqual(params ...interface{}) (res interface{}, err error) {
 	}
 	if first, ok := pp[0].([]interface{}); ok {
 		list := make([][]interface{}, 0, len(first))
+		for i := 1; i < len(pp); i++ {
+			if len(first) != len(pp[i].([]interface{})) {
+				return true, nil
+			}
+		}
 		for i := 0; i < len(first); i++ {
 			list = append(list, make([]interface{}, len(pp)))
 		}
@@ -319,12 +320,10 @@ func NotEqual(params ...interface{}) (res interface{}, err error) {
 			}
 		}
 		for _, l := range list {
-			r, err := NotEqual(l...)
-			if err != nil {
-				return true, err
-			}
+			// impossible to return error here
+			r, _ := NotEqual(l...)
 			if !r.(bool) {
-				return false, err
+				return false, nil
 			}
 		}
 	} else {
@@ -351,41 +350,27 @@ func (f Compare) Eval(params ...interface{}) (interface{}, error) {
 	if !convertible(params...) {
 		return false, fmt.Errorf("type of two params are mismatch")
 	}
-	exists := false
-	for _, o := range []uint8{ModeGreaterThan, ModeLessThan, ModeGreaterThanOrEqualTo, ModeLessThanOrEqualTo} {
-		if f.Mode == o {
-			exists = true
-			break
-		}
-	}
-	if !exists {
-		return false, fmt.Errorf("mode %v not supported", f.Mode)
-	}
 
 	switch left := params[0].(type) {
 	case string:
 		switch f.Mode {
 		case ModeGreaterThan:
-			return left > params[1].(string), nil
+			return left > fmt.Sprint(params[1]), nil
 		case ModeLessThan:
-			return left < params[1].(string), nil
+			return left < fmt.Sprint(params[1]), nil
 		case ModeGreaterThanOrEqualTo:
-			return left >= params[1].(string), nil
+			return left >= fmt.Sprint(params[1]), nil
 		case ModeLessThanOrEqualTo:
-			return left <= params[1].(string), nil
+			return left <= fmt.Sprint(params[1]), nil
 		}
-		return false, nil
 	case time.Time:
-		return f.evalTime(left, params[1].(time.Time)), nil
+		return f.evalTime(left, params[1].(time.Time))
 	default:
 		l, err := toFloat64(left)
 		if err != nil {
 			return false, err
 		}
-		r, err := toFloat64(params[1])
-		if err != nil {
-			return false, err
-		}
+		r, _ := toFloat64(params[1])
 		switch f.Mode {
 		case ModeGreaterThan:
 			return l > r, nil
@@ -396,22 +381,22 @@ func (f Compare) Eval(params ...interface{}) (interface{}, error) {
 		case ModeLessThanOrEqualTo:
 			return l <= r, nil
 		}
-		return false, ErrNotFound
 	}
+	return false, fmt.Errorf("mode %v not supported", f.Mode)
 }
 
-func (f Compare) evalTime(left, right time.Time) bool {
+func (f Compare) evalTime(left, right time.Time) (bool, error) {
 	switch f.Mode {
 	case ModeGreaterThan:
-		return left.After(right)
+		return left.After(right), nil
 	case ModeLessThan:
-		return left.Before(right)
+		return left.Before(right), nil
 	case ModeGreaterThanOrEqualTo:
-		return left.After(right) || left == right
+		return left.After(right) || left == right, nil
 	case ModeLessThanOrEqualTo:
-		return left.Before(right) || left == right
+		return left.Before(right) || left == right, nil
 	}
-	return false
+	return false, fmt.Errorf("mode %v not supported", f.Mode)
 }
 
 type TypeTime struct {
@@ -470,7 +455,7 @@ type TypeVersion struct{}
 
 func (f TypeVersion) Eval(params ...interface{}) (interface{}, error) {
 	if l := len(params); l != 1 {
-		return false, fmt.Errorf("need only one param, but got %d", l)
+		return nil, fmt.Errorf("need only one param, but got %d", l)
 	}
 	if list, ok := params[0].([]interface{}); ok {
 		res := make([]float64, 0, len(list))
@@ -638,6 +623,25 @@ func uniform(params ...interface{}) ([]interface{}, error) {
 	}
 	res := make([]interface{}, 0, len(params))
 	if _, ok := params[0].([]interface{}); ok {
+		maps := make(map[int]int)
+		headers := make([]interface{}, 0, len(params))
+		for i, p := range params {
+			if pa := p.([]interface{}); len(pa) != 0 {
+				headers = append(headers, pa[0])
+				maps[i] = len(headers) - 1
+			} else {
+				maps[i] = -1
+			}
+		}
+		r, err := uniform(headers...)
+		if err != nil {
+			return nil, err
+		}
+		for i := 0; i < len(params); i++ {
+			if index := maps[i]; index != -1 {
+				params[i].([]interface{})[0] = r[index]
+			}
+		}
 		for _, p := range params {
 			r, err := uniform(p.([]interface{})...)
 			if err != nil {

@@ -17,7 +17,28 @@ func TestBasic(t *testing.T) {
 		t.Error(err)
 	}
 	if res != true {
-		t.Errorf("fuck")
+		t.Errorf("incorrect result")
+	}
+	bres, err := Eval(`(in gender ("female" "male"))`, params)
+	if err != nil {
+		t.Error(err)
+	}
+	if bres != true {
+		t.Errorf("incorrect result")
+	}
+}
+
+func TestBasicIncorrect(t *testing.T) {
+	params := MapParams{
+		"gender": "female",
+	}
+	expr, err := New(`(+ 1 1)`)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = expr.EvalBool(params)
+	if err == nil {
+		t.Error("should have errors")
 	}
 }
 
@@ -38,6 +59,7 @@ func TestCorrectBooleanFuncs(t *testing.T) {
 	}
 	inputs := []input{
 		{`(in gender ("female" "male"))`, true},
+		{`(in gender () )`, false},
 		{`(not (in gender ("female" "male")))`, false},
 		{`(! (in gender ("female" "male")))`, false},
 		{`(ge (t_version "2.1.1") (t_version "2.1.1"))`, true},
@@ -89,6 +111,71 @@ func TestCorrectFuncs(t *testing.T) {
 		if r != input.res {
 			t.Errorf("expression `%s` wanna: %+v, got: %+v", input.expr, input.res, r)
 		}
+
+		r, err = Eval(input.expr, vvf)
+		if err != nil {
+			t.Error(err)
+		}
+		if r != input.res {
+			t.Errorf("expression `%s` wanna: %+v, got: %+v", input.expr, input.res, r)
+		}
+	}
+}
+
+func TestIncorrect(t *testing.T) {
+	type input struct {
+		expr string
+		// expression correctness
+		b bool
+	}
+	vvf := MapParams{
+		"gender": "male",
+		"age":    18,
+		"price":  16.7,
+	}
+	inputs := []input{
+		{`eq (mod age 5) 3.0`, false},
+		{`(eq (+ money 5) 15)`, true},
+	}
+	for _, input := range inputs {
+		_, err := New(input.expr)
+		if !input.b && err == nil {
+			t.Error("should have errors")
+		}
+
+		_, err = Eval(input.expr, vvf)
+		if err == nil {
+			t.Errorf("input: %v, should have errors", input.expr)
+		}
+
+		_, err = EvalBool(input.expr, vvf)
+		if err == nil {
+			t.Errorf("input: %v, should have errors", input.expr)
+		}
+	}
+}
+
+func TestAdvancedFunc(t *testing.T) {
+	invoker := func(params ...interface{}) (interface{}, error) {
+		fn := params[0].(function.Func)
+		return fn(params[1:]...)
+	}
+
+	if err := function.Regist("invoke", invoker); err != nil {
+		t.Error(err)
+	}
+
+	exp := `(invoke + 1 1)`
+	e, err := New(exp)
+	if err != nil {
+		t.Error(err)
+	}
+	r, err := e.Eval(nil)
+	if err != nil {
+		t.Error(err)
+	}
+	if r.(float64) != 2 {
+		t.Errorf("expression `%s` wanna: %+v, got: %+v", exp, 2, r)
 	}
 }
 
