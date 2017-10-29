@@ -14,6 +14,8 @@ import (
 const (
 	FuncIn      = "in"
 	FuncBetween = "between"
+	// have element(s) in common
+	FuncOverlap = "overlap"
 
 	FuncAnd     = "and"
 	FuncOr      = "or"
@@ -71,6 +73,7 @@ const (
 
 func init() {
 	MustRegist(FuncIn, In)
+	MustRegist(FuncOverlap, Overlap)
 	MustRegist(FuncBetween, Between)
 
 	MustRegistFuncer(FuncAnd, AndOr{ModeAnd})
@@ -139,6 +142,26 @@ func In(params ...interface{}) (interface{}, error) {
 			if params[0] == p {
 				return true, nil
 			}
+		}
+	}
+	return false, nil
+}
+
+// Overlap returns whether two arrays have element(s) in common
+func Overlap(params ...interface{}) (interface{}, error) {
+	if l := len(params); l != 2 {
+		return false, fmt.Errorf("need two params, but got %d", l)
+	}
+	for _, p := range params {
+		if _, ok := p.([]interface{}); !ok {
+			return false, fmt.Errorf("the params should be array type")
+		}
+	}
+	for _, p := range params[0].([]interface{}) {
+		if ok, err := In(p, params[1]); err != nil {
+			return false, err
+		} else if ok.(bool) {
+			return true, nil
 		}
 	}
 	return false, nil

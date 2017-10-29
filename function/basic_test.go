@@ -60,6 +60,39 @@ func TestIn(t *testing.T) {
 	}
 }
 
+func TestOverlap(t *testing.T) {
+	inputs := []res{
+		{[]interface{}{[]interface{}{1, 2, 3}, []interface{}{2, 3, 4}}, true, false},
+		{[]interface{}{[]interface{}{true}, []interface{}{true, false}}, true, false},
+		{[]interface{}{[]interface{}{1, 2.0, 3.000000}, []interface{}{2, 3, 4}}, true, false},
+		{[]interface{}{[]interface{}{"1", "2", "3"}, []interface{}{"2", "3", "4"}}, true, false},
+		{[]interface{}{[]interface{}{1, 2, 3}, []interface{}{6, 5, 4}}, false, false},
+		{[]interface{}{[]interface{}{true}, []interface{}{false}}, false, false},
+		{[]interface{}{[]interface{}{1, 2.0, 3.000000}, []interface{}{6, 5, 4}}, false, false},
+		{[]interface{}{[]interface{}{"1", "2", "3"}, []interface{}{"6", "5", "4"}}, false, false},
+		{[]interface{}{[]interface{}{1, 2, 3}, []interface{}{2, 3, 4}, []interface{}{2, 3, 4}}, false, true},
+		{[]interface{}{[]interface{}{1, 2, 3}, 2}, false, true},
+		{[]interface{}{[]interface{}{1, 2, []interface{}{4}}, []interface{}{3, 4, 5}}, false, true},
+	}
+	for _, input := range inputs {
+		res, err := Overlap(input.params...)
+		if input.err {
+			if err == nil {
+				t.Errorf("input: %v, shoud have errors but got none", input.params)
+				continue
+			}
+		} else {
+			if err != nil {
+				t.Error(err)
+				continue
+			}
+		}
+		if input.result != res {
+			t.Errorf("input: %v wanna: %v, got: %v", input.params, input.result, res)
+		}
+	}
+}
+
 func TestBetween(t *testing.T) {
 	inputs := []res{
 		{[]interface{}{100.0, 10.0, 1000.0}, true, false},
