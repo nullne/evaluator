@@ -42,6 +42,31 @@ func TestBasicIncorrect(t *testing.T) {
 	}
 }
 
+func TestComplicated(t *testing.T) {
+	params := MapParams{
+		"gender":      "female",
+		"age":         55,
+		"app_version": "",
+		"region":      []int{1, 2, 3},
+	}
+	expr, err := New(`
+(or
+	(and
+	(between age 18 80)
+	(eq gender "male")
+	(between (t_version "2.7.1") (t_version "2.7.1") (t_version "2.9.1"))
+	)
+	(overlap region (2890 3780))
+ )`)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = expr.EvalBool(params)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
 func TestCorrectBooleanFuncs(t *testing.T) {
 	// stmt := `(in gender ("female" "male"))`
 	type input struct {
@@ -68,6 +93,12 @@ func TestCorrectBooleanFuncs(t *testing.T) {
 		{`(between (t_version "2.1.1.9999") (t_version "2.1.1") (t_version "2.1.2"))`, true},
 		{`(between (mod age 5) 1 3)`, true},
 		{`(between (td_time now1) (td_time now1) (td_time now2))`, true},
+
+		// overlap
+		{`(overlap (1 2 3) (4 5 6))`, false},
+		{`(overlap () ())`, false},
+		{`(overlap (1 2 3) (4 3 2))`, true},
+		{`(overlap ("1" "2" "3") ("4" "3" "2"))`, true},
 	}
 	for _, input := range inputs {
 		e, err := New(input.expr)

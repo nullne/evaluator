@@ -88,6 +88,7 @@ or you can reuse the `Expression` to evaluate multiple times:
 | ------- | --------- | ---------- | ----
 | -       | `in`      | `(in 1 (1 2))` | also suport array like `(in (1) ((1)))`
 | -       | `between` | `(between age 18 20)` 
+| -       | `overlap` | `(overlap region (3142 1860))` 
 | `&`     | `and`     | `(and (eq gender "femal") (between age 18 20))`
 | `|`     | `or`      |
 | `!`     | `not`     |
