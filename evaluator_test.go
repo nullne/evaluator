@@ -43,10 +43,14 @@ func TestBasicIncorrect(t *testing.T) {
 }
 
 func TestComplicated(t *testing.T) {
+	appVersion, err := function.TypeVersion{}.Eval("2.7.1")
+	if err != nil {
+		t.Fatal(err)
+	}
 	params := MapParams{
 		"gender":      "female",
 		"age":         55,
-		"app_version": "",
+		"app_version": appVersion,
 		"region":      []int{1, 2, 3},
 	}
 	expr, err := New(`
@@ -54,7 +58,7 @@ func TestComplicated(t *testing.T) {
 	(and
 	(between age 18 80)
 	(eq gender "male")
-	(between (t_version "2.7.1") (t_version "2.7.1") (t_version "2.9.1"))
+	(between app_version (t_version "2.7.1") (t_version "2.9.1"))
 	)
 	(overlap region (2890 3780))
  )`)

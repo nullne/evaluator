@@ -110,38 +110,96 @@ func init() {
 	MustRegistFuncer(OperatorDivide, BinaryOperator{ModeDivide})
 }
 
+type Equal struct {
+}
+
+func (f Equal) Eval(params ...interface{}) (res interface{}, err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			res = false
+			err = fmt.Errorf("%v", e)
+		}
+	}()
+
+	params = Uniform(params...)
+	return f.eval(params...)
+}
+
+func (f Equal) eval(params ...interface{}) (res bool, err error) {
+	l := len(params)
+	if l < 2 {
+		return false, fmt.Errorf("equal: need at least two params, but got %d", l)
+	}
+	if k := reflect.TypeOf(params[0]).Kind(); k == reflect.Slice || k == reflect.Array {
+		vs := make([]reflect.Value, l)
+		max := 0
+		for i := 0; i < l; i++ {
+			v := reflect.ValueOf(params[i])
+			if k := v.Kind(); k != reflect.Slice && k != reflect.Array {
+				return false, nil
+			}
+			if m := v.Len(); m > max {
+				max = m
+			}
+			vs[i] = v
+		}
+		for i := 0; i < max; i++ {
+			fs := make([]interface{}, l)
+			for j := 0; j < l; j++ {
+				if i < vs[j].Len() {
+					fs[j] = vs[j].Index(i).Interface()
+				} else {
+					return false, nil
+				}
+			}
+			// impossible error here
+			if ok, _ := f.eval(fs...); !ok {
+				return false, nil
+			}
+		}
+	} else {
+		for i := 1; i < len(params); i++ {
+			if params[0] != params[i] {
+				return false, nil
+			}
+		}
+	}
+	return true, nil
+}
+
+func NotEqual(params ...interface{}) (res interface{}, err error) {
+	l := len(params)
+	if l < 2 {
+		return true, fmt.Errorf("not equal: need at least two params, but got %d", l)
+	}
+	for i := 0; i < l; i++ {
+		for j := i + 1; j < l; j++ {
+			eq := Equal{}
+			if ok, err := eq.Eval(params[i], params[j]); err != nil {
+				return false, err
+			} else if ok.(bool) {
+				return false, nil
+			}
+		}
+	}
+	return true, nil
+}
+
 // In returns whether first param is in the second param. The length of params must be 2, in which the second must be an array, and the first one must not be.
 func In(params ...interface{}) (interface{}, error) {
 	if l := len(params); l != 2 {
-		return false, fmt.Errorf("need two params, but got %d", l)
+		return false, fmt.Errorf("in: need two params, but got %d", l)
 	}
-	array, ok := params[0].([]interface{})
-	if ok {
-		return false, errors.New("the first param must not be an array")
-	}
-	array, ok = params[1].([]interface{})
-	if !ok {
-		return false, errors.New("the second param must be an array")
+	if k := reflect.TypeOf(params[1]).Kind(); k != reflect.Slice && k != reflect.Array {
+		return false, errors.New("in: the second param must be an array")
 	}
 
-	isNumber := false
-	left, err := toFloat64(params[0])
-	if err == nil {
-		isNumber = true
-	}
-	for _, p := range array {
-		if isNumber {
-			r, err := toFloat64(p)
-			if err != nil {
-				return false, errors.New("the element in the second param shuold be type of number, same as the first one")
-			}
-			if left == r {
-				return true, nil
-			}
-		} else {
-			if params[0] == p {
-				return true, nil
-			}
+	params = Uniform(params...)
+
+	array := reflect.ValueOf(params[1])
+	for i := 0; i < array.Len(); i++ {
+		if params[0] == array.Index(i).Interface() {
+			return true, nil
 		}
 	}
 	return false, nil
@@ -150,15 +208,15 @@ func In(params ...interface{}) (interface{}, error) {
 // Overlap returns whether two arrays have element(s) in common
 func Overlap(params ...interface{}) (interface{}, error) {
 	if l := len(params); l != 2 {
-		return false, fmt.Errorf("need two params, but got %d", l)
+		return false, fmt.Errorf("overlap: need two params, but got %d", l)
 	}
-	for _, p := range params {
-		if _, ok := p.([]interface{}); !ok {
-			return false, fmt.Errorf("the params should be array type")
-		}
+	first := reflect.TypeOf(params[0])
+	if k := first.Kind(); k != reflect.Slice && k != reflect.Array {
+		return false, fmt.Errorf("overlap: the params should be array type")
 	}
-	for _, p := range params[0].([]interface{}) {
-		if ok, err := In(p, params[1]); err != nil {
+	t := reflect.ValueOf(params[0])
+	for i := 0; i < t.Len(); i++ {
+		if ok, err := In(t.Index(i).Interface(), params[1]); err != nil {
 			return false, err
 		} else if ok.(bool) {
 			return true, nil
@@ -167,36 +225,19 @@ func Overlap(params ...interface{}) (interface{}, error) {
 	return false, nil
 }
 
-// Between returns whether first param is in the range between second and third param.
-func Between(params ...interface{}) (interface{}, error) {
-	if l := len(params); l != 3 {
-		return false, fmt.Errorf("need three params, but got %d", l)
-	}
-	ge, err := Compare{ModeGreaterThanOrEqualTo}.Eval(params[0], params[1])
-	if err != nil {
-		return false, err
-	}
-	if !ge.(bool) {
-		return false, nil
-	}
-
-	le, err := Compare{ModeLessThanOrEqualTo}.Eval(params[0], params[2])
-	return le.(bool), err
-}
-
 type AndOr struct {
 	Mode uint8
 }
 
 func (f AndOr) Eval(params ...interface{}) (interface{}, error) {
 	if l := len(params); l < 2 {
-		return false, fmt.Errorf("need at least two params, but got %d", l)
+		return false, fmt.Errorf("and or:need at least two params, but got %d", l)
 	}
 	bs := make([]bool, len(params))
 	for i, p := range params {
 		v, ok := p.(bool)
 		if !ok {
-			return false, errors.New("the type of param must be boolean")
+			return false, errors.New("and or: param type must be boolean")
 		}
 		bs[i] = v
 	}
@@ -214,128 +255,13 @@ func (f AndOr) Eval(params ...interface{}) (interface{}, error) {
 
 func Not(params ...interface{}) (interface{}, error) {
 	if l := len(params); l != 1 {
-		return false, fmt.Errorf("need only one param, but got %d", l)
+		return false, fmt.Errorf("not: need only one param, but got %d", l)
 	}
 	b, ok := params[0].(bool)
 	if !ok {
-		return false, errors.New("the type of param must be boolean")
+		return false, errors.New("not: param type must be boolean")
 	}
 	return !b, nil
-}
-
-type Equal struct {
-}
-
-func (f Equal) Eval(params ...interface{}) (res interface{}, err error) {
-	defer func() {
-		if e := recover(); e != nil {
-			res = false
-			err = fmt.Errorf("%v", e)
-		}
-	}()
-
-	if l := len(params); l < 2 {
-		return false, fmt.Errorf("need at least two params, but got %d", l)
-	}
-	if first, ok := params[0].([]interface{}); ok {
-		for i := 1; i < len(params); i++ {
-			if len(first) != len(params[i].([]interface{})) {
-				return false, nil
-			}
-		}
-		for i := 0; i < len(first); i++ {
-			ps := make([]interface{}, len(params))
-			for j := 0; j < len(params); j++ {
-				ps[j] = params[j].([]interface{})[i]
-			}
-			res, err := f.Eval(ps...)
-			if err != nil {
-				return false, err
-			}
-			if !res.(bool) {
-				return false, err
-			}
-		}
-		return true, nil
-	} else {
-		isNumber := false
-		if _, err := toFloat64(params[0]); err == nil {
-			isNumber = true
-		}
-		if isNumber {
-			return f.evalFloat64(params...)
-		} else {
-			for _, p := range params[1:] {
-				if p != params[0] {
-					return false, nil
-				}
-			}
-		}
-	}
-	return true, nil
-}
-
-func (f Equal) evalFloat64(params ...interface{}) (res bool, err error) {
-	left, _ := toFloat64(params[0])
-	for _, p := range params[1:] {
-		right, err := toFloat64(p)
-		if err != nil {
-			return false, err
-		}
-		if left != right {
-			return false, nil
-		}
-	}
-	return true, nil
-}
-
-func NotEqual(params ...interface{}) (res interface{}, err error) {
-	defer func() {
-		if e := recover(); e != nil {
-			res = true
-			err = fmt.Errorf("%v", e)
-		}
-	}()
-
-	if l := len(params); l < 2 {
-		return true, fmt.Errorf("need at least two params, but got %d", l)
-	}
-	pp, err := uniform(params...)
-	if err != nil {
-		return true, err
-	}
-	if first, ok := pp[0].([]interface{}); ok {
-		list := make([][]interface{}, 0, len(first))
-		for i := 1; i < len(pp); i++ {
-			if len(first) != len(pp[i].([]interface{})) {
-				return true, nil
-			}
-		}
-		for i := 0; i < len(first); i++ {
-			list = append(list, make([]interface{}, len(pp)))
-		}
-		for i := 0; i < len(pp); i++ {
-			for j := 0; j < len(first); j++ {
-				list[j][i] = (pp[i].([]interface{}))[j]
-			}
-		}
-		for _, l := range list {
-			// impossible to return error here
-			r, _ := NotEqual(l...)
-			if !r.(bool) {
-				return false, nil
-			}
-		}
-	} else {
-		for i := 0; i < len(pp); i++ {
-			for j := i + 1; j < len(pp); j++ {
-				if pp[i] == pp[j] {
-					return false, nil
-				}
-			}
-		}
-	}
-	return true, nil
 }
 
 type Compare struct {
@@ -345,10 +271,10 @@ type Compare struct {
 
 func (f Compare) Eval(params ...interface{}) (interface{}, error) {
 	if l := len(params); l != 2 {
-		return false, fmt.Errorf("need two params, but got %d", l)
+		return false, fmt.Errorf("compare: need two params, but got %d", l)
 	}
 	if !convertible(params...) {
-		return false, fmt.Errorf("type of two params are mismatch")
+		return false, fmt.Errorf("compare: type of two params are mismatch")
 	}
 
 	switch left := params[0].(type) {
@@ -382,7 +308,7 @@ func (f Compare) Eval(params ...interface{}) (interface{}, error) {
 			return l <= r, nil
 		}
 	}
-	return false, fmt.Errorf("mode %v not supported", f.Mode)
+	return false, fmt.Errorf("compare: mode %v not supported", f.Mode)
 }
 
 func (f Compare) evalTime(left, right time.Time) (bool, error) {
@@ -399,92 +325,127 @@ func (f Compare) evalTime(left, right time.Time) (bool, error) {
 	return false, fmt.Errorf("mode %v not supported", f.Mode)
 }
 
+// Between returns whether first param is in the range between second and third param.
+func Between(params ...interface{}) (interface{}, error) {
+	if l := len(params); l != 3 {
+		return false, fmt.Errorf("between: need three params, but got %d", l)
+	}
+	ge, err := Compare{ModeGreaterThanOrEqualTo}.Eval(params[0], params[1])
+	if err != nil {
+		return false, err
+	}
+	if !ge.(bool) {
+		return false, nil
+	}
+
+	le, err := Compare{ModeLessThanOrEqualTo}.Eval(params[0], params[2])
+	return le.(bool), err
+}
+
 type TypeTime struct {
 	Format string
 }
 
-func (f TypeTime) Eval(params ...interface{}) (interface{}, error) {
-	if f.Format != "" {
-		params = append([]interface{}{f.Format}, params...)
+func (f TypeTime) Eval(params ...interface{}) (res interface{}, err error) {
+	if l := len(params); f.Format == "" && l < 2 {
+		return nil, fmt.Errorf("t_time(without format): need at leat two param, but got %d", l)
+	} else if f.Format != "" && l < 1 {
+		return nil, fmt.Errorf("t_time(with format): need one param, but got %d", l)
 	}
-	return typeTime{}.eval(params...)
+	params = Uniform(params...)
+	if f.Format == "" {
+		if s, ok := params[0].(string); ok {
+			f.Format = s
+		} else {
+			return nil, fmt.Errorf("t_time: param base type is not string")
+		}
+		res, err = f.eval(params[1:]...)
+	} else {
+		res, err = f.eval(params...)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if l := res.([]interface{}); len(l) == 1 {
+		return l[0], nil
+	}
+	return res, nil
 }
 
-type typeTime struct{}
-
-func (f typeTime) eval(params ...interface{}) (interface{}, error) {
-	if l := len(params); l != 2 {
-		return nil, fmt.Errorf("need two param, but got %d", l)
-	}
-	if list, ok := params[1].([]interface{}); ok {
-		res := make([]time.Time, 0, len(list))
-		for _, p := range list {
-			v, err := f.eval(params[0], p)
+func (f TypeTime) eval(params ...interface{}) (interface{}, error) {
+	res := make([]interface{}, len(params))
+	for i, p := range params {
+		if v := reflect.ValueOf(p); v.Kind() == reflect.Slice || v.Kind() == reflect.Array {
+			ps := make([]interface{}, v.Len())
+			for j := 0; j < v.Len(); j++ {
+				ps[j] = v.Index(j).Interface()
+			}
+			if m, err := f.eval(ps...); err != nil {
+				return nil, err
+			} else {
+				res[i] = m
+			}
+		} else {
+			s, ok := p.(string)
+			if !ok {
+				return nil, errors.New("t_time: param base type is not string")
+			}
+			t, err := time.Parse(f.Format, s)
 			if err != nil {
 				return nil, err
 			}
-			if t, ok := v.(time.Time); ok {
-				res = append(res, t)
-			} else {
-				return nil, ErrIllegalFormat
-			}
+			res[i] = t
 		}
-		return res, nil
-	} else {
-		v, err := f.convert(params[0], params[1])
-		if err != nil {
-			return nil, err
-		}
-		return v, nil
 	}
-}
-
-func (f typeTime) convert(ll, vv interface{}) (time.Time, error) {
-	l, ok := ll.(string)
-	if !ok {
-		return time.Time{}, errors.New("basic type of layout value should be string")
-	}
-	v, ok := vv.(string)
-	if !ok {
-		return time.Time{}, errors.New("basic type of time value should be string")
-	}
-	return time.Parse(l, v)
+	return res, nil
 }
 
 type TypeVersion struct{}
 
 func (f TypeVersion) Eval(params ...interface{}) (interface{}, error) {
-	if l := len(params); l != 1 {
-		return nil, fmt.Errorf("need only one param, but got %d", l)
+	if l := len(params); l < 1 {
+		return nil, fmt.Errorf("t_version: need at leat one param, but got %d", l)
 	}
-	if list, ok := params[0].([]interface{}); ok {
-		res := make([]float64, 0, len(list))
-		for _, p := range list {
-			v, err := f.Eval(p)
+	params = Uniform(params...)
+	res, err := f.eval(params...)
+	if err != nil {
+		return nil, err
+	}
+	if l := res.([]interface{}); len(l) == 1 {
+		return l[0], nil
+	}
+	return res, nil
+}
+
+func (f TypeVersion) eval(params ...interface{}) (interface{}, error) {
+	res := make([]interface{}, len(params))
+	for i, p := range params {
+		if v := reflect.ValueOf(p); v.Kind() == reflect.Slice || v.Kind() == reflect.Array {
+			ps := make([]interface{}, v.Len())
+			for j := 0; j < v.Len(); j++ {
+				ps[j] = v.Index(j).Interface()
+			}
+			if m, err := f.eval(ps...); err != nil {
+				return nil, err
+			} else {
+				res[i] = m
+			}
+		} else {
+			s, ok := p.(string)
+			if !ok {
+				return nil, errors.New("t_version: param base type is not string")
+			}
+			t, err := f.convert(s)
 			if err != nil {
 				return nil, err
 			}
-			if t, ok := v.(float64); ok {
-				res = append(res, t)
-			} else {
-				return nil, ErrIllegalFormat
-			}
+			res[i] = t
 		}
-		return res, nil
-	} else {
-		v, err := f.convert(params[0])
-		if err != nil {
-			return nil, err
-		}
-		return v, nil
 	}
+	return res, nil
 }
 
-func (f TypeVersion) convert(vv interface{}) (float64, error) {
-	v, ok := vv.(string)
-	if !ok {
-		return 0, errors.New("basic type of version value should be string")
-	}
+func (f TypeVersion) convert(v string) (float64, error) {
 	nums := strings.Split(v, ".")
 	if l := len(nums); l < 1 || l > 10 {
 		return 0, fmt.Errorf("support at most 10 parts in version")
@@ -507,7 +468,7 @@ func (f TypeVersion) convert(vv interface{}) (float64, error) {
 
 func Modulo(params ...interface{}) (interface{}, error) {
 	if l := len(params); l != 2 {
-		return 0, fmt.Errorf("need two params, but got %d", l)
+		return 0, fmt.Errorf("mod: need two params, but got %d", l)
 	}
 	left, err := toInt64(params[0])
 	if err != nil {
@@ -526,7 +487,7 @@ type SuccessiveBinaryOperator struct {
 
 func (f SuccessiveBinaryOperator) Eval(params ...interface{}) (interface{}, error) {
 	if l := len(params); l < 2 {
-		return 0.0, fmt.Errorf("need at leat two params, but got %d", l)
+		return 0.0, fmt.Errorf("SuccessiveBinaryOperator: need at leat two params, but got %d", l)
 	}
 	var res float64 = 0
 	for _, p := range params {
@@ -540,7 +501,7 @@ func (f SuccessiveBinaryOperator) Eval(params ...interface{}) (interface{}, erro
 		case ModeMultiply:
 			res *= v
 		default:
-			return 0.0, errors.New("only support add and multiply")
+			return 0.0, errors.New("SuccessiveBinaryOperator: only support add and multiply")
 		}
 	}
 	return res, nil
@@ -552,7 +513,7 @@ type BinaryOperator struct {
 
 func (f BinaryOperator) Eval(params ...interface{}) (interface{}, error) {
 	if l := len(params); l != 2 {
-		return 0.0, fmt.Errorf("need two params, but got %d", l)
+		return 0.0, fmt.Errorf("BinaryOperator: need two params, but got %d", l)
 	}
 	left, err := toFloat64(params[0])
 	if err != nil {
@@ -567,11 +528,11 @@ func (f BinaryOperator) Eval(params ...interface{}) (interface{}, error) {
 		return left - right, nil
 	case ModeDivide:
 		if right == 0 {
-			return 0.0, errors.New("dividend shuold not be zero")
+			return 0.0, errors.New("BinaryOperator: dividend shuold not be zero")
 		}
 		return left / right, nil
 	default:
-		return 0.0, errors.New("only support subtract and divide")
+		return 0.0, errors.New("BinaryOperator: only support subtract and divide")
 	}
 }
 
@@ -616,55 +577,31 @@ func convertible(params ...interface{}) bool {
 	return true
 }
 
-// should handle possible panic when invoked
-func uniform(params ...interface{}) ([]interface{}, error) {
-	if l := len(params); l < 1 {
-		return nil, fmt.Errorf("need at least one params, but got %d", l)
-	}
-	res := make([]interface{}, 0, len(params))
-	if _, ok := params[0].([]interface{}); ok {
-		maps := make(map[int]int)
-		headers := make([]interface{}, 0, len(params))
-		for i, p := range params {
-			if pa := p.([]interface{}); len(pa) != 0 {
-				headers = append(headers, pa[0])
-				maps[i] = len(headers) - 1
-			} else {
-				maps[i] = -1
+// Uniform converts any number-like element to type of float64 as much as possible
+func Uniform(params ...interface{}) []interface{} {
+	res := make([]interface{}, len(params))
+	for i, p := range params {
+		if k := reflect.TypeOf(p).Kind(); k == reflect.Slice || k == reflect.Array {
+			v := reflect.ValueOf(p)
+			ps := make([]interface{}, v.Len())
+			for j := 0; j < v.Len(); j++ {
+				ps[j] = v.Index(j).Interface()
 			}
-		}
-		r, err := uniform(headers...)
-		if err != nil {
-			return nil, err
-		}
-		for i := 0; i < len(params); i++ {
-			if index := maps[i]; index != -1 {
-				params[i].([]interface{})[0] = r[index]
-			}
-		}
-		for _, p := range params {
-			r, err := uniform(p.([]interface{})...)
-			if err != nil {
-				return nil, err
-			}
-			res = append(res, r)
-		}
-	} else {
-		isNumber := false
-		if _, err := toFloat64(params[0]); err == nil {
-			isNumber = true
-		}
-		for _, p := range params {
-			if isNumber {
-				n, err := toFloat64(p)
-				if err != nil {
-					return nil, err
+			res[i] = Uniform(ps...)
+		} else {
+			switch t := reflect.ValueOf(p); t.Kind() {
+			case reflect.String:
+				res[i] = t.String()
+			case reflect.Bool:
+				res[i] = t.Bool()
+			default:
+				if n, err := toFloat64(p); err == nil {
+					res[i] = n
+				} else {
+					res[i] = p
 				}
-				res = append(res, n)
-			} else {
-				res = append(res, p)
 			}
 		}
 	}
-	return res, nil
+	return res
 }

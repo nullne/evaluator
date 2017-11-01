@@ -75,7 +75,7 @@ or you can reuse the `Expression` to evaluate multiple times:
 	(and
 		(ne os "ios")
 		(eq gender "male")
-		(beteen version (type_version "2.7.1") (type_version "2.9.1"))
+		(beteen version (t_version "2.7.1") (t_version "2.9.1"))
 	)
 	```
 
