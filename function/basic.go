@@ -117,7 +117,7 @@ func (f Equal) Eval(params ...interface{}) (res interface{}, err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			res = false
-			err = fmt.Errorf("%v", e)
+			err = fmt.Errorf("euqal: %v", e)
 		}
 	}()
 
@@ -294,7 +294,7 @@ func (f Compare) Eval(params ...interface{}) (interface{}, error) {
 	default:
 		l, err := toFloat64(left)
 		if err != nil {
-			return false, err
+			return false, fmt.Errorf("compare: %+v", err)
 		}
 		r, _ := toFloat64(params[1])
 		switch f.Mode {
@@ -392,7 +392,7 @@ func (f TypeTime) eval(params ...interface{}) (interface{}, error) {
 			}
 			t, err := time.Parse(f.Format, s)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("t_time: %+v", err)
 			}
 			res[i] = t
 		}
@@ -448,17 +448,17 @@ func (f TypeVersion) eval(params ...interface{}) (interface{}, error) {
 func (f TypeVersion) convert(v string) (float64, error) {
 	nums := strings.Split(v, ".")
 	if l := len(nums); l < 1 || l > 10 {
-		return 0, fmt.Errorf("support at most 10 parts in version")
+		return 0, fmt.Errorf("t_version: support at most 10 parts in version")
 	}
 	var version float64
 	e := 5
 	for _, num := range nums {
 		n, err := strconv.Atoi(num)
 		if err != nil {
-			return 0, err
+			return 0, fmt.Errorf("t_version: %+v", err)
 		}
 		if float64(n) >= math.Pow10(4) {
-			return 0, errors.New("each part of version should not greater than 10000")
+			return 0, errors.New("t_version: each part of version should not greater than 10000")
 		}
 		version += float64(n) * math.Pow10(4*e)
 		e -= 1
@@ -472,11 +472,11 @@ func Modulo(params ...interface{}) (interface{}, error) {
 	}
 	left, err := toInt64(params[0])
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("mod: %+v", err)
 	}
 	right, err := toInt64(params[1])
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("mod: %+v", err)
 	}
 	return left % right, nil
 }
@@ -493,7 +493,7 @@ func (f SuccessiveBinaryOperator) Eval(params ...interface{}) (interface{}, erro
 	for _, p := range params {
 		v, err := toFloat64(p)
 		if err != nil {
-			return 0.0, err
+			return 0.0, fmt.Errorf("SuccessiveBinaryOperator: %+v", err)
 		}
 		switch f.Mode {
 		case ModeAdd:
@@ -517,11 +517,11 @@ func (f BinaryOperator) Eval(params ...interface{}) (interface{}, error) {
 	}
 	left, err := toFloat64(params[0])
 	if err != nil {
-		return 0.0, err
+		return 0.0, fmt.Errorf("BinaryOperator: %+v", err)
 	}
 	right, err := toFloat64(params[1])
 	if err != nil {
-		return 0.0, err
+		return 0.0, fmt.Errorf("BinaryOperator: %+v", err)
 	}
 	switch f.Mode {
 	case ModeSubtract:
