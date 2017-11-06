@@ -260,58 +260,93 @@ func TestDIVFunc(t *testing.T) {
 	}
 }
 
-func BenchmarkEvalTimeBetweenReuseExpression(b *testing.B) {
-	expr, err := New(`(between (td_date "2017-01-05") (td_date "2017-01-01") (td_date "2017-01-10"))`)
+func BenchmarkEqualString(b *testing.B) {
+	expr, err := New(`(eq "one" "one" "three")`)
 	if err != nil {
 		b.Error(err)
 	}
 	for n := 0; n < b.N; n++ {
-		r, err := expr.EvalBool(nil)
+		_, err := expr.EvalBool(nil)
 		if err != nil {
 			b.Error(err)
-		}
-		if r != true {
-			b.Error("wrong result")
 		}
 	}
 }
 
-func BenchmarkEvalTimeBetween(b *testing.B) {
-	for n := 0; n < b.N; n++ {
-		r, err := EvalBool(`(between (td_date "2017-01-05") (td_date "2017-01-01") (td_date "2017-01-10"))`, nil)
-		if err != nil {
-			b.Error(err)
-		}
-		if r != true {
-			b.Error("wrong result")
-		}
-	}
-}
-
-func BenchmarkEvalEqualReuseExpression(b *testing.B) {
-	expr, err := New(`(eq "male" "female")`)
+func BenchmarkInString(b *testing.B) {
+	expr, err := New(`(in "2.7.2" ("2.7.1" "2.7.4" "2.7.5"))`)
 	if err != nil {
 		b.Error(err)
 	}
 	for n := 0; n < b.N; n++ {
-		r, err := expr.EvalBool(nil)
+		_, err := expr.EvalBool(nil)
 		if err != nil {
 			b.Error(err)
-		}
-		if r != false {
-			b.Error("wrong result")
 		}
 	}
 }
 
-func BenchmarkEvalEqual(b *testing.B) {
+func BenchmarkBetweenInt(b *testing.B) {
+	expr, err := New(`(between 100 10 200)`)
+	if err != nil {
+		b.Error(err)
+	}
 	for n := 0; n < b.N; n++ {
-		r, err := EvalBool(`(eq "male" "female")`, nil)
+		_, err := expr.EvalBool(nil)
 		if err != nil {
 			b.Error(err)
 		}
-		if r != false {
-			b.Error("wrong result")
+	}
+}
+
+func BenchmarkBetweenTime(b *testing.B) {
+	expr, err := New(`(between (td_time "2017-07-09 12:00:00") (td_time "2017-07-02 12:00:00") (td_time "2017-07-19 12:00:00"))`)
+	if err != nil {
+		b.Error(err)
+	}
+	for n := 0; n < b.N; n++ {
+		_, err := expr.EvalBool(nil)
+		if err != nil {
+			b.Error(err)
+		}
+	}
+}
+
+func BenchmarkOverlapInt(b *testing.B) {
+	expr, err := New(`(overlap (1 2 3) (4 5 6))`)
+	if err != nil {
+		b.Error(err)
+	}
+	for n := 0; n < b.N; n++ {
+		_, err := expr.EvalBool(nil)
+		if err != nil {
+			b.Error(err)
+		}
+	}
+}
+
+func BenchmarkTypeTime(b *testing.B) {
+	expr, err := New(`(td_time "2017-09-09 12:00:00")`)
+	if err != nil {
+		b.Error(err)
+	}
+	for n := 0; n < b.N; n++ {
+		_, err := expr.Eval(nil)
+		if err != nil {
+			b.Error(err)
+		}
+	}
+}
+
+func BenchmarkTypeVersion(b *testing.B) {
+	expr, err := New(`(t_version "2.8.9.1")`)
+	if err != nil {
+		b.Error(err)
+	}
+	for n := 0; n < b.N; n++ {
+		_, err := expr.Eval(nil)
+		if err != nil {
+			b.Error(err)
 		}
 	}
 }

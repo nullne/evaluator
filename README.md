@@ -9,14 +9,14 @@ We use s-epxression syntax to parse and evaluate.
 > In computing, s-expressions, sexprs or sexps (for "symbolic expression") are a notation for nested list (tree-structured) data, invented for and popularized by the programming language Lisp, which uses them for source code as well as data. 
 
 For example, for expression in common way:
-	
+​	
 	(
 			(gender = "female")
 	 and  
 	 		((age % 2) != 0)
 	 )
 it's coresponding format in s-expression is:
-	
+​	
 	(and
 		(= gender "female")
 		(!= 
@@ -27,14 +27,14 @@ it's coresponding format in s-expression is:
 
 #### Element types within expression
 - number  
-	For convenience, we treat float64, int64 and so on as type of number. For example, float `100.0` is equal to int `100`, but not euqal to string `"100"`
+  For convenience, we treat float64, int64 and so on as type of number. For example, float `100.0` is equal to int `100`, but not euqal to string `"100"`
 
 - string  
    character string quoted with `` ` ``, `'`, or `"` are treated as type of `string`. You can convert type `string` to any other defined type you like by type convert functions which are mentioned later
 
 - function or variable  
     character string without quotes are regarded as type of `function` or `variable` which depends on whether this function exists. For example in expression `(age birthdate)`, both `age` and `birthdate` is unquoted. `age` is type of function because we have registered a function named `age`, while `birthdate` is type of variable for not found. The program will come to errors if there is neither parameter nor function named `birthdate` when evaluating
-	
+
 
 #### How to
 You can evaluate directly:
@@ -48,7 +48,7 @@ You can evaluate directly:
     }
     fmt.Println(res)
     # true	
-    
+
 or you can reuse the `Expression` to evaluate multiple times:
 
     params := evaluator.MapParams{
@@ -71,19 +71,19 @@ or you can reuse the `Expression` to evaluate multiple times:
 - `(ne (mod (age birthdate) 7) 5)`
 - or multiple-line for clarity
 
-	```
-	(and
-		(ne os "ios")
-		(eq gender "male")
-		(beteen version (t_version "2.7.1") (t_version "2.9.1"))
-	)
-	```
+  ```
+  (and
+  	(ne os "ios")
+  	(eq gender "male")
+  	(beteen version (t_version "2.7.1") (t_version "2.9.1"))
+  )
+  ```
 
 
 #### Functions
 ##### Implemented functions
 
- 
+
 | operand | function  | example | description 
 | ------- | --------- | ---------- | ----
 | -       | `in`      | `(in 1 (1 2))` | also suport array like `(in (1) ((1)))`
@@ -119,7 +119,7 @@ Yes, you can write your own function by following thses steps:
 here is an example:
 
 	package main
-	
+
 	import (
 		"errors"
 		"log"
@@ -178,11 +178,12 @@ here is an example:
 - `MapParams` a simple implemented `Params` in `map`
 
 #### Bench
-	# expression: (between (td_date "2017-01-05") (td_date "2017-01-01") (td_date "2017-01-10"))
-	BenchmarkEvalTimeBetweenReuseExpression-8   	 1000000	      1901 ns/op
-	BenchmarkEvalTimeBetween-8                  	  200000	      6333 ns/op
-	# expression (eq "male" "female")
-	BenchmarkEvalEqualReuseExpression-8         	 2000000	       670 ns/op
-	BenchmarkEvalEqual-8                        	 1000000	      2323 ns/op
+    BenchmarkEqualString-8   	 3000000	       473 ns/op
+    BenchmarkInString-8      	 2000000	       916 ns/op
+    BenchmarkBetweenInt-8    	 3000000	       467 ns/op
+    BenchmarkBetweenTime-8   	 1000000	      2089 ns/op
+    BenchmarkOverlapInt-8    	  500000	      2966 ns/op
+    BenchmarkTypeTime-8      	 2000000	       638 ns/op
+    BenchmarkTypeVersion-8   	 3000000	       539 ns/op
 
 p.s. on MacBook Pro (Retina, 15-inch, Mid 2015), Memory: 16 GB 1600 MHz DDR3, Processor: 2.2 GHz Intel Core i7
