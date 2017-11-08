@@ -1,4 +1,3 @@
-// Among build-in functions implemented here, all params with type of number will be treated as float64 except for mod
 package function
 
 import (
@@ -14,7 +13,6 @@ import (
 const (
 	FuncIn      = "in"
 	FuncBetween = "between"
-	// have element(s) in common
 	FuncOverlap = "overlap"
 
 	FuncAnd     = "and"
@@ -110,8 +108,8 @@ func init() {
 	MustRegistFuncer(OperatorDivide, BinaryOperator{ModeDivide})
 }
 
-type Equal struct {
-}
+// Equal returns whether the input params are equal to each other, array type is supported too
+type Equal struct{}
 
 func (f Equal) Eval(params ...interface{}) (res interface{}, err error) {
 	defer func() {
@@ -167,6 +165,7 @@ func (f Equal) eval(params ...interface{}) (res bool, err error) {
 	return true, nil
 }
 
+// NotEqual returns whether the input params are not equal with each other, array type is supported too
 func NotEqual(params ...interface{}) (res interface{}, err error) {
 	l := len(params)
 	if l < 2 {
@@ -185,7 +184,7 @@ func NotEqual(params ...interface{}) (res interface{}, err error) {
 	return true, nil
 }
 
-// In returns whether first param is in the second param. The length of params must be 2, in which the second must be an array, and the first one must not be.
+// In returns whether first param is in the second param(must be array type). The length of params must be 2
 func In(params ...interface{}) (interface{}, error) {
 	if l := len(params); l != 2 {
 		return false, fmt.Errorf("in: need two params, but got %d", l)
@@ -205,7 +204,7 @@ func In(params ...interface{}) (interface{}, error) {
 	return false, nil
 }
 
-// Overlap returns whether two arrays have element(s) in common
+// Overlap returns whether two arrays have element(s) in common. The length of params must be 2 and type must be array.
 func Overlap(params ...interface{}) (interface{}, error) {
 	if l := len(params); l != 2 {
 		return false, fmt.Errorf("overlap: need two params, but got %d", l)
@@ -225,6 +224,7 @@ func Overlap(params ...interface{}) (interface{}, error) {
 	return false, nil
 }
 
+// AndOr implements logic operator "and" "or"
 type AndOr struct {
 	Mode uint8
 }
@@ -253,6 +253,7 @@ func (f AndOr) Eval(params ...interface{}) (interface{}, error) {
 	return res, nil
 }
 
+// Not implements logic operator "not"
 func Not(params ...interface{}) (interface{}, error) {
 	if l := len(params); l != 1 {
 		return false, fmt.Errorf("not: need only one param, but got %d", l)
@@ -264,6 +265,7 @@ func Not(params ...interface{}) (interface{}, error) {
 	return !b, nil
 }
 
+// Compare compare the two inputs with the given mode.
 type Compare struct {
 	// support mode: > < >= <=
 	Mode uint8
@@ -325,7 +327,7 @@ func (f Compare) evalTime(left, right time.Time) (bool, error) {
 	return false, fmt.Errorf("mode %v not supported", f.Mode)
 }
 
-// Between returns whether first param is in the range between second and third param.
+// Between returns whether first param is in the range between second and third param. The input params must be comparable
 func Between(params ...interface{}) (interface{}, error) {
 	if l := len(params); l != 3 {
 		return false, fmt.Errorf("between: need three params, but got %d", l)
@@ -342,6 +344,7 @@ func Between(params ...interface{}) (interface{}, error) {
 	return le.(bool), err
 }
 
+// TypeTime converts given string to the time.Time on the format of Format
 type TypeTime struct {
 	Format string
 }
@@ -400,6 +403,7 @@ func (f TypeTime) eval(params ...interface{}) (interface{}, error) {
 	return res, nil
 }
 
+// TypeVersion converts version string to a comparable number
 type TypeVersion struct{}
 
 func (f TypeVersion) Eval(params ...interface{}) (interface{}, error) {
@@ -461,11 +465,12 @@ func (f TypeVersion) convert(v string) (float64, error) {
 			return 0, errors.New("t_version: each part of version should not greater than 10000")
 		}
 		version += float64(n) * math.Pow10(4*e)
-		e -= 1
+		e--
 	}
 	return version, nil
 }
 
+// Modulo implements mod operator in go
 func Modulo(params ...interface{}) (interface{}, error) {
 	if l := len(params); l != 2 {
 		return 0, fmt.Errorf("mod: need two params, but got %d", l)
@@ -481,6 +486,7 @@ func Modulo(params ...interface{}) (interface{}, error) {
 	return left % right, nil
 }
 
+// SuccessiveBinaryOperator implements successive plus or multiply
 type SuccessiveBinaryOperator struct {
 	Mode uint8
 }
@@ -489,7 +495,7 @@ func (f SuccessiveBinaryOperator) Eval(params ...interface{}) (interface{}, erro
 	if l := len(params); l < 2 {
 		return 0.0, fmt.Errorf("SuccessiveBinaryOperator: need at leat two params, but got %d", l)
 	}
-	var res float64 = 0
+	var res float64
 	for _, p := range params {
 		v, err := toFloat64(p)
 		if err != nil {
@@ -507,6 +513,7 @@ func (f SuccessiveBinaryOperator) Eval(params ...interface{}) (interface{}, erro
 	return res, nil
 }
 
+// BinaryOperator implements minus and divide
 type BinaryOperator struct {
 	Mode uint8
 }

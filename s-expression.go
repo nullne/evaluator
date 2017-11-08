@@ -1,6 +1,11 @@
+// Package evaluator treats the element within expression with three types, each type has its own array form:
 //
-// there are four basic types, including float64, string and varString. varString is the type of variables or functions which doesn't be quoted. In functions, int64 and float64 can be compared if there is any need.
-// each type has its own array form.
+// - number
+//     For convenience, we treat float64, int64 and so on as type of number. For example, float 100.0 is equal to int 100, but not euqal to string "100"
+// - string
+//    character string quoted with `, ', or " are treated as type of string. You can convert type string to any other defined type you like by type convert functions which are mentioned later
+// - function or variable
+//    character string without quotes are regarded as type of function or variable which depends on whether this function exists. For example in expression (age birthdate), both age and birthdate is unquoted. age is type of function because we have registered a function named age, while birthdate is type of variable for not found. The program will come to errors if there is neither parameter nor function named birthdate when evaluating
 package evaluator
 
 import (
@@ -16,9 +21,13 @@ import (
 )
 
 var (
-	ErrUnexpectedEnd        = errors.New("unexpected end")
-	ErrNilInput             = errors.New("nil input")
-	ErrLeftOverText         = errors.New("left over text")
+	// ErrUnexpectedEnd occurs most time with the missing parenthesis
+	ErrUnexpectedEnd = errors.New("unexpected end")
+	// ErrNilInput means the input is nil
+	ErrNilInput = errors.New("nil input")
+	// ErrLeftOverText indicates there are some of the expression are left pared
+	ErrLeftOverText = errors.New("left over text")
+	// ErrUnmatchedParenthesis indicated the mismatching parenthesis
 	ErrUnmatchedParenthesis = errors.New("unmatched parenthesis")
 )
 
@@ -113,19 +122,19 @@ ss:
 	return sexp{tokens.Back().Value}, nil
 }
 
-func (s sexp) String() string {
-	return fmt.Sprintf("%v", s.i)
+func (exp sexp) String() string {
+	return fmt.Sprintf("%v", exp.i)
 }
 
-func (s sexp) dump(i int) {
-	fmt.Printf("%*s%v: ", i*3, "", reflect.TypeOf(s.i))
-	if l, isList := s.i.(list); isList {
+func (exp sexp) dump(i int) {
+	fmt.Printf("%*s%v: ", i*3, "", reflect.TypeOf(exp.i))
+	if l, isList := exp.i.(list); isList {
 		fmt.Printf("%d elements: %s\n", len(l), l)
 		for _, e := range l {
 			e.dump(i + 1)
 		}
 	} else {
-		fmt.Println(s)
+		fmt.Println(exp)
 	}
 }
 

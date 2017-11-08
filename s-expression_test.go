@@ -37,7 +37,7 @@ func TestFscan(t *testing.T) {
 	}
 }
 
-func ExampleExpression() {
+func ExampleDumpExpression() {
 	s := `(!(a b )())`
 	exp, err := parse(s)
 	if err != nil {

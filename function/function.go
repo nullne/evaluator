@@ -1,3 +1,4 @@
+// Package function provides basic functions which implement Funcer interface
 package function
 
 import "errors"
@@ -10,7 +11,7 @@ var (
 )
 
 var (
-	functions map[string]Func = make(map[string]Func)
+	functions = make(map[string]Func)
 )
 
 func Get(name string) (Func, error) {
@@ -27,6 +28,7 @@ type Funcer interface {
 
 type Func func(params ...interface{}) (interface{}, error)
 
+// RegistFuncer regists fn with type Funcer with name of name
 func RegistFuncer(name string, fn Funcer) error {
 	if _, exist := functions[name]; exist {
 		return ErrFunctionExists
@@ -35,10 +37,12 @@ func RegistFuncer(name string, fn Funcer) error {
 	return nil
 }
 
+// MustRegistFuncer is same as RegistFuncer but may overide if function with name existed
 func MustRegistFuncer(name string, fn Funcer) {
 	functions[name] = fn.Eval
 }
 
+// Regist regists fn with type Func with name of name
 func Regist(name string, fn Func) error {
 	if _, exist := functions[name]; exist {
 		return ErrFunctionExists
@@ -47,6 +51,7 @@ func Regist(name string, fn Func) error {
 	return nil
 }
 
+// MustRegist is same as Regist but may overide if function with name existed
 func MustRegist(name string, fn Func) {
 	functions[name] = fn
 }

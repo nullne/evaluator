@@ -2,11 +2,34 @@ package evaluator
 
 import (
 	"errors"
+	"fmt"
+	"log"
 	"testing"
 	"time"
 
 	"github.com/nullne/evaluator/function"
 )
+
+func ExampleExpression() {
+	exp, err := New(`(eq gender 'male')`)
+	if err != nil {
+		log.Fatal(err)
+	}
+	params := MapParams{"gender": "male"}
+	res, err := exp.Eval(params)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(res)
+	res, err = exp.EvalBool(params)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(res)
+	// Output:
+	// true
+	// true
+}
 
 func TestBasic(t *testing.T) {
 	params := MapParams{
