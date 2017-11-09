@@ -60,9 +60,8 @@ func (exp sexp) evaluate(ps Params) (interface{}, error) {
 		}
 		if fn, ok := params[0].(function.Func); ok {
 			return fn(params[1:]...)
-		} else {
-			return params, nil
 		}
+		return params, nil
 	} else {
 		if val, ok := exp.i.(varString); ok {
 			s := string(val)
@@ -174,9 +173,8 @@ func scan(data []byte) (advance int, token interface{}, err error) {
 		if b := data[i]; b == ')' || b == '(' {
 			if i == start {
 				return start + 1, data[i], nil
-			} else {
-				return i, convert(data[start:i]), nil
 			}
+			return i, convert(data[start:i]), nil
 		}
 		var r rune
 		r, width = utf8.DecodeRune(data[i:])

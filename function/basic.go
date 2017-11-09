@@ -11,61 +11,104 @@ import (
 )
 
 const (
-	FuncIn      = "in"
+	// FuncIn is the function/operator keyword in
+	FuncIn = "in"
+	// FuncBetween is the function/operator keyword between
 	FuncBetween = "between"
+	// FuncOverlap is the function/operator keyword overlap
 	FuncOverlap = "overlap"
 
-	FuncAnd     = "and"
-	FuncOr      = "or"
-	FuncNot     = "not"
+	// FuncAnd is the function/operator keyword and
+	FuncAnd = "and"
+	// FuncOr is the function/operator keyword or
+	FuncOr = "or"
+	// FuncNot is the function/operator keyword not
+	FuncNot = "not"
+	// OperatorAnd is the function/operator keyword &
 	OperatorAnd = "&"
-	OperatorOr  = "|"
+	// OperatorOr is the function/operator keyword |
+	OperatorOr = "|"
+	// OperatorNot is the function/operator keyword !
 	OperatorNot = "!"
 
-	FuncEqual                    = "eq"
-	FuncNotEqual                 = "ne"
-	FuncGreaterThan              = "gt"
-	FuncLessThan                 = "lt"
-	FuncGreaterThanOrEqualTo     = "ge"
-	FuncLessThanOrEqualTo        = "le"
-	OperatorEqual                = "="
-	OperatorNotEqual             = "!="
-	OperatorGreaterThan          = ">"
-	OperatorLessThan             = "<"
+	// FuncEqual is the function/operator keyword eq
+	FuncEqual = "eq"
+	// FuncNotEqual is the function/operator keyword ne
+	FuncNotEqual = "ne"
+	// FuncGreaterThan is the function/operator keyword gt
+	FuncGreaterThan = "gt"
+	// FuncLessThan is the function/operator keyword lt
+	FuncLessThan = "lt"
+	// FuncGreaterThanOrEqualTo is the function/operator keyword ge
+	FuncGreaterThanOrEqualTo = "ge"
+	// FuncLessThanOrEqualTo is the function/operator keyword le
+	FuncLessThanOrEqualTo = "le"
+	// OperatorEqual is the function/operator keyword =
+	OperatorEqual = "="
+	// OperatorNotEqual is the function/operator keyword !=
+	OperatorNotEqual = "!="
+	// OperatorGreaterThan is the function/operator keyword >
+	OperatorGreaterThan = ">"
+	// OperatorLessThan is the function/operator keyword <
+	OperatorLessThan = "<"
+	// OperatorGreaterThanOrEqualTo is the function/operator keyword >=
 	OperatorGreaterThanOrEqualTo = ">="
-	OperatorLessThanOrEqualTo    = "<="
+	// OperatorLessThanOrEqualTo is the function/operator keyword <=
+	OperatorLessThanOrEqualTo = "<="
 
-	FuncModulo     = "mod"
+	// FuncModulo is the function/operator keyword mod
+	FuncModulo = "mod"
+	// OperatorModulo is the function/operator keyword %
 	OperatorModulo = "%"
 
-	OperatorAdd      = "+"
+	// OperatorAdd is the function/operator keyword +
+	OperatorAdd = "+"
+	// OperatorSubtract is the function/operator keyword -
 	OperatorSubtract = "-"
+	// OperatorMultiply is the function/operator keyword *
 	OperatorMultiply = "*"
-	OperatorDivide   = "/"
+	// OperatorDivide is the function/operator keyword /
+	OperatorDivide = "/"
 
-	FuncTypeVersion     = "t_version"
-	FuncTypeTime        = "t_time"
+	// FuncTypeVersion is the function/operator keyword t_version
+	FuncTypeVersion = "t_version"
+	// FuncTypeTime is the function/operator keyword t_time
+	FuncTypeTime = "t_time"
+	// FuncTypeDefaultTime is the function/operator keyword td_time
 	FuncTypeDefaultTime = "td_time"
+	// FuncTypeDefaultDate is the function/operator keyword td_date
 	FuncTypeDefaultDate = "td_date"
 )
 
 const (
+	// ModeAnd is the mode add for function AndOr
 	ModeAnd uint8 = iota + 1
+	// ModeOr is the mode or for function AndOr
 	ModeOr
 
+	// ModeGreaterThan is the mod > for function Compare
 	ModeGreaterThan
+	// ModeLessThan is the mod < for function Compare
 	ModeLessThan
+	// ModeGreaterThanOrEqualTo is the mod >= for function Compare
 	ModeGreaterThanOrEqualTo
+	// ModeLessThanOrEqualTo is the mod <= for function Compare
 	ModeLessThanOrEqualTo
 
+	// ModeAdd is the mode + for function SuccessiveBinaryOperator
 	ModeAdd
+	// ModeMultiply is the mode * for function SuccessiveBinaryOperator
 	ModeMultiply
+	// ModeSubtract is the mode - for function BinaryOperator
 	ModeSubtract
+	// ModeDivide is the mode / for function BinaryOperator
 	ModeDivide
 )
 
 const (
+	// DefaultTimeFormat is the default time format
 	DefaultTimeFormat = "2006-01-02 15:04:05"
+	// DefaultDateFormat is the default date format
 	DefaultDateFormat = "2006-01-02"
 )
 
@@ -111,6 +154,7 @@ func init() {
 // Equal returns whether the input params are equal to each other, array type is supported too
 type Equal struct{}
 
+// Eval implements the interface Funcer
 func (f Equal) Eval(params ...interface{}) (res interface{}, err error) {
 	defer func() {
 		if e := recover(); e != nil {
@@ -229,6 +273,7 @@ type AndOr struct {
 	Mode uint8
 }
 
+// Eval implements the interface Funcer
 func (f AndOr) Eval(params ...interface{}) (interface{}, error) {
 	if l := len(params); l < 2 {
 		return false, fmt.Errorf("and or:need at least two params, but got %d", l)
@@ -271,6 +316,7 @@ type Compare struct {
 	Mode uint8
 }
 
+// Eval implements the interface Funcer
 func (f Compare) Eval(params ...interface{}) (interface{}, error) {
 	if l := len(params); l != 2 {
 		return false, fmt.Errorf("compare: need two params, but got %d", l)
@@ -349,6 +395,7 @@ type TypeTime struct {
 	Format string
 }
 
+// Eval implements the interface Funcer
 func (f TypeTime) Eval(params ...interface{}) (res interface{}, err error) {
 	if l := len(params); f.Format == "" && l < 2 {
 		return nil, fmt.Errorf("t_time(without format): need at leat two param, but got %d", l)
@@ -383,11 +430,11 @@ func (f TypeTime) eval(params ...interface{}) (interface{}, error) {
 			for j := 0; j < v.Len(); j++ {
 				ps[j] = v.Index(j).Interface()
 			}
-			if m, err := f.eval(ps...); err != nil {
+			m, err := f.eval(ps...)
+			if err != nil {
 				return nil, err
-			} else {
-				res[i] = m
 			}
+			res[i] = m
 		} else {
 			s, ok := p.(string)
 			if !ok {
@@ -406,6 +453,7 @@ func (f TypeTime) eval(params ...interface{}) (interface{}, error) {
 // TypeVersion converts version string to a comparable number
 type TypeVersion struct{}
 
+// Eval implements the interface Funcer
 func (f TypeVersion) Eval(params ...interface{}) (interface{}, error) {
 	if l := len(params); l < 1 {
 		return nil, fmt.Errorf("t_version: need at leat one param, but got %d", l)
@@ -429,11 +477,11 @@ func (f TypeVersion) eval(params ...interface{}) (interface{}, error) {
 			for j := 0; j < v.Len(); j++ {
 				ps[j] = v.Index(j).Interface()
 			}
-			if m, err := f.eval(ps...); err != nil {
+			m, err := f.eval(ps...)
+			if err != nil {
 				return nil, err
-			} else {
-				res[i] = m
 			}
+			res[i] = m
 		} else {
 			s, ok := p.(string)
 			if !ok {
@@ -491,6 +539,7 @@ type SuccessiveBinaryOperator struct {
 	Mode uint8
 }
 
+// Eval implements the interface Funcer
 func (f SuccessiveBinaryOperator) Eval(params ...interface{}) (interface{}, error) {
 	if l := len(params); l < 2 {
 		return 0.0, fmt.Errorf("SuccessiveBinaryOperator: need at leat two params, but got %d", l)
@@ -518,6 +567,7 @@ type BinaryOperator struct {
 	Mode uint8
 }
 
+// Eval implements the interface Funcer
 func (f BinaryOperator) Eval(params ...interface{}) (interface{}, error) {
 	if l := len(params); l != 2 {
 		return 0.0, fmt.Errorf("BinaryOperator: need two params, but got %d", l)

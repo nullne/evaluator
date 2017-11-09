@@ -4,16 +4,21 @@ package function
 import "errors"
 
 var (
-	ErrNotFound       = errors.New("function not implemented")
-	ErrParamsInvalid  = errors.New("params are invalid")
+	// ErrNotFound means the function is not implemented
+	ErrNotFound = errors.New("function not implemented")
+	// ErrParamsInvalid means the passed params are invalid
+	ErrParamsInvalid = errors.New("params are invalid")
+	// ErrFunctionExists means the function exists when registering
 	ErrFunctionExists = errors.New("function exists")
-	ErrIllegalFormat  = errors.New("illegal data format")
+	// ErrIllegalFormat means the data format is not legal
+	ErrIllegalFormat = errors.New("illegal data format")
 )
 
 var (
 	functions = make(map[string]Func)
 )
 
+// Get get a registered function by name
 func Get(name string) (Func, error) {
 	fn, exists := functions[name]
 	if !exists {
@@ -22,10 +27,12 @@ func Get(name string) (Func, error) {
 	return fn, nil
 }
 
+// Funcer is the function interface which will be used to evaluate expressionn
 type Funcer interface {
 	Eval(params ...interface{}) (interface{}, error)
 }
 
+// Func is a handy function type
 type Func func(params ...interface{}) (interface{}, error)
 
 // RegistFuncer regists fn with type Funcer with name of name
