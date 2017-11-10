@@ -62,16 +62,16 @@ func (exp sexp) evaluate(ps Params) (interface{}, error) {
 			return fn(params[1:]...)
 		}
 		return params, nil
-	} else {
-		if val, ok := exp.i.(varString); ok {
-			s := string(val)
-			if fn, err := function.Get(s); err == nil {
-				return fn, nil
-			}
-			return ps.Get(s)
-		}
-		return exp.i, nil
 	}
+
+	if val, ok := exp.i.(varString); ok {
+		s := string(val)
+		if fn, err := function.Get(s); err == nil {
+			return fn, nil
+		}
+		return ps.Get(s)
+	}
+	return exp.i, nil
 }
 
 func parse(exp string) (sexp, error) {

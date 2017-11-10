@@ -118,61 +118,66 @@ Yes, you can write your own function by following thses steps:
 
 here is an example:
 
-	package main
+```go
+package main
 
-	import (
-		"errors"
-		"log"
-		"time"
-	
-		"github.com/nullne/evaluator"
-		"github.com/nullne/evaluator/function"
-	)
-	
-	type age struct{}
-	// define your own function and don't forget to register
-	func (f age) Eval(params ...interface{}) (interface{}, error) {
-		if len(params) != 1 {
-			return nil, errors.New("only one params accepted")
-		}
-		birth, ok := params[0].(string)
-		if !ok {
-			return nil, errors.New("birth format need to be string")
-		}
-		r, err := time.Parse("2006-01-02", birth)
-		if err != nil {
-			return nil, err
-		}
-		now := time.Now()
-		a := r.Year() - now.Year()
-		if r.Month() < now.Month() {
+
+import (
+	"errors"
+	"log"
+	"time"
+
+	"github.com/nullne/evaluator"
+	"github.com/nullne/evaluator/function"
+)
+
+// define your own function and don't forget to register
+func age(params ...interface{}) (interface{}, error) {
+	if len(params) != 1 {
+		return nil, errors.New("only one params accepted")
+	}
+	birth, ok := params[0].(string)
+	if !ok {
+		return nil, errors.New("birth format need to be string")
+	}
+	r, err := time.Parse("2006-01-02", birth)
+	if err != nil {
+		return nil, err
+	}
+	now := time.Now()
+	a := r.Year() - now.Year()
+	if r.Month() < now.Month() {
+		a--
+	} else if r.Month() == now.Month() {
+		if r.Day() < now.Day() {
 			a--
-		} else if r.Month() == now.Month() {
-			if r.Day() < now.Day() {
-				a--
-			}
 		}
-		return a, nil
 	}
-	func main() {
-		if err := function.Regist("age", age{}); err != nil {
-			log.Print(err)
-		}
-	
-		exp := `(not (between (age birthdate) 18 20))`
-		vvf := evaluator.MapParams{
-			"birthdate": "2018-02-01",
-		}
-		e, err := evaluator.New(exp)
-		if err != nil {
-			log.Print(err)
-		}
-		r, err := e.Eval(vvf)
-		if err != nil {
-			log.Print(err)
-		}
-		log.Printf("expression: `%s`, wanna: %+v, got: %+v\r", exp, true, r)
+	return a, nil
+}
+
+func main() {
+	if err := function.Regist("age", age); err != nil {
+		log.Print(err)
 	}
+
+	exp := `(not (between (age birthdate) 18 20))`
+	vvf := evaluator.MapParams{
+		"birthdate": "1980-02-01",
+	}
+	e, err := evaluator.New(exp)
+	if err != nil {
+		log.Print(err)
+	}
+	r, err := e.Eval(vvf)
+	if err != nil {
+		log.Print(err)
+	}
+	log.Printf("expression: `%s`, wanna: %+v, got: %+v\r", exp, true, r)
+}
+```
+
+
 #### Params
 - `Params` interface, which has a method named `Get` to get all params needed
 - `MapParams` a simple implemented `Params` in `map`
