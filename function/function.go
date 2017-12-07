@@ -58,6 +58,15 @@ func Regist(name string, fn Func) error {
 	return nil
 }
 
+// Registered returns all registered functions or operators
+func Registered() []string {
+	ss := make([]string, 0, len(functions))
+	for k := range functions {
+		ss = append(ss, k)
+	}
+	return ss
+}
+
 // MustRegist is same as Regist but may overide if function with name existed
 func MustRegist(name string, fn Func) {
 	functions[name] = fn

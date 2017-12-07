@@ -1,6 +1,8 @@
 package function
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestGet(t *testing.T) {
 	if err := Regist("foo", foo); err != nil {
@@ -23,7 +25,7 @@ func TestGet(t *testing.T) {
 	if _, err := Get("fooooo"); err != ErrNotFound {
 		t.Error("should not found")
 	}
-
+	_ = Registered()
 }
 
 var foo = func(params ...interface{}) (interface{}, error) {
