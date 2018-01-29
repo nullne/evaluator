@@ -336,7 +336,6 @@ func TestCompare(t *testing.T) {
 			}
 		}
 	}
-
 }
 
 func TestBetween(t *testing.T) {

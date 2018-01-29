@@ -120,6 +120,8 @@ func TestCorrectBooleanFuncs(t *testing.T) {
 		{`(between (t_version "2.1.1.9999") (t_version "2.1.1") (t_version "2.1.2"))`, true},
 		{`(between (mod age 5) 1 3)`, true},
 		{`(between (td_time now1) (td_time now1) (td_time now2))`, true},
+		{`(ge (t_version "2.8.1") (t_version "2.9.3"))`, false},
+		{`(ge (t_version "2.9.1") (t_version "2.8.3"))`, true},
 
 		// overlap
 		{`(overlap (1 2 3) (4 5 6))`, false},
