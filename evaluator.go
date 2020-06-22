@@ -44,6 +44,10 @@ func (e Expression) EvalBool(params Params) (bool, error) {
 	return b, nil
 }
 
+func (e Expression) Properties() []string {
+	return e.exp.properties()
+}
+
 // MapParams is a simple map implementation of Params interface
 type MapParams map[string]interface{}
 
