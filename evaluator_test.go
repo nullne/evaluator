@@ -295,13 +295,13 @@ func TestProperties(t *testing.T) {
 		{
 			expr: `(or
 	(and
-	(between age 18 80)
+	(between AGE 18 80)
 	(eq gender "male")
 	(between app_version (t_version "2.7.1") (t_version "2.9.1"))
 	)
 	(overlap region (2890 3780))
 	 )`,
- 			res: []string{"age", "gender", "app_version", "region"},
+			res: []string{"AGE", "gender", "app_version", "region"},
 		},
 		{
 			expr: `(and
@@ -310,6 +310,14 @@ func TestProperties(t *testing.T) {
   (eq language "zh-Hans")
 	)`,
 			res: []string{"os", "app_version", "os", "affiliate", "os", "language"},
+		},
+		{
+			expr: `(eq 1 1)`,
+			res:  nil,
+		},
+		{
+			expr: `(and () ())`,
+			res:  nil,
 		},
 	}
 	for _, input := range inputs {
