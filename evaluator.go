@@ -44,6 +44,13 @@ func (e Expression) EvalBool(params Params) (bool, error) {
 	return b, nil
 }
 
+// Properties returns the field names in an Expression.
+// e.g. Expression constructed by `(or (and (between age 18 80) (eq gender "male") )`
+// returns "age", "gender" by calling Properties.
+func (e Expression) Properties() []string {
+	return e.exp.properties()
+}
+
 // MapParams is a simple map implementation of Params interface
 type MapParams map[string]interface{}
 

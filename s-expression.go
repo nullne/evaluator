@@ -74,6 +74,27 @@ func (exp sexp) evaluate(ps Params) (interface{}, error) {
 	return exp.i, nil
 }
 
+func (exp sexp) properties() []string {
+	if l, isList := exp.i.(list); isList {
+		if len(l) == 0 {
+			return nil
+		}
+		var props []string
+		for _, p := range l {
+			props = append(props, p.properties()...)
+		}
+		return props
+	}
+	if val, ok := exp.i.(varString); ok {
+		s := string(val)
+		if _, err := function.Get(s); err == nil {
+			return nil
+		}
+		return []string{s}
+	}
+	return nil
+}
+
 func parse(exp string) (sexp, error) {
 	data := []byte(exp)
 	tokens := queue.New()

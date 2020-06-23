@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"reflect"
 	"testing"
 	"time"
 
@@ -282,6 +283,43 @@ func TestDIVFunc(t *testing.T) {
 	}
 	if r != true {
 		t.Errorf("expression `%s` wanna: %+v, got: %+v", exp, true, r)
+	}
+}
+
+func TestProperties(t *testing.T) {
+	type input struct {
+		expr string
+		res  []string
+	}
+	inputs := []input{
+		{
+			expr: `(or
+	(and
+	(between age 18 80)
+	(eq gender "male")
+	(between app_version (t_version "2.7.1") (t_version "2.9.1"))
+	)
+	(overlap region (2890 3780))
+	 )`,
+ 			res: []string{"age", "gender", "app_version", "region"},
+		},
+		{
+			expr: `(and
+  (and (eq os "android") (ge app_version (t_version "4.0.6") ))
+  (or (and (eq os "android") (ne affiliate "googleplay")) (ne os "android"))
+  (eq language "zh-Hans")
+	)`,
+			res: []string{"os", "app_version", "os", "affiliate", "os", "language"},
+		},
+	}
+	for _, input := range inputs {
+		e, err := New(input.expr)
+		if err != nil {
+			t.Error(err)
+		}
+		if !reflect.DeepEqual(e.Properties(), input.res) {
+			t.Errorf("not equal res: %+v, want: %+v", e.Properties(), input.res)
+		}
 	}
 }
 
