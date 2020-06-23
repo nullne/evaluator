@@ -306,7 +306,7 @@ func TestCompare(t *testing.T) {
 		ModeLessThan:             true,
 		ModeGreaterThanOrEqualTo: true,
 		ModeLessThanOrEqualTo:    true,
-		63: false,
+		63:                       false,
 	}
 	inputs2 := []struct {
 		params []interface{}
