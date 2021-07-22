@@ -545,6 +545,9 @@ func (f SuccessiveBinaryOperator) Eval(params ...interface{}) (interface{}, erro
 		return 0.0, fmt.Errorf("SuccessiveBinaryOperator: need at leat two params, but got %d", l)
 	}
 	var res float64
+	if f.Mode == ModeMultiply {
+		res = 1
+	}
 	for _, p := range params {
 		v, err := toFloat64(p)
 		if err != nil {
